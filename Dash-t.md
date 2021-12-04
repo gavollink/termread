@@ -56,3 +56,18 @@ This is scraped out of old DEC manuals.
 | `\033[?62;7;...c` | ... DRCS |
 | `\033[?62;8;...c` | ... UDK |
 | `\033[?62;9;...c` | ... 7-bit national replacement characters avail. |
+| `\033[?64;...c` | VT-550 terminal with... |
+| `\033[?64;12;...c` | VT-550 terminal with... Yugoslavian (SCS) |
+| `\033[?64;15;...c` | ... Technical character set |
+| `\033[?64;18;...c` | ... Windowing capability |
+| `\033[?64;21;...c` | ... Horizontal scrolling |
+| `\033[?64;23;...c` | ... Greek |
+| `\033[?64;24;...c` | ... Turkish |
+| `\033[?64;42;...c` | ... ISO Latin-2 character set |
+| `\033[?64;44;...c` | ... PCTerm |
+| `\033[?64;45;...c` | ... Soft key map |
+| `\033[?64;46;...c` | ... ASCII emulation |
+
+VT-220 and VT-550 share capability codes up to 9, and I have to assume that 
+xterm has done some co-opting of this in expanding the definitions in its
+responses.
