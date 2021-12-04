@@ -1,6 +1,9 @@
 # TermRead
 
-Very small C utility for reading information about a terminal.
+Very small C utility for reading information about a modern soft terminal.
+
+*I have spent more time writing documentation about VT terminals than I
+have spent writing the code for this.*
 
 # Examples
 
@@ -21,17 +24,18 @@ $ echo $TERMID
 \033[65;1;9c
 ```
 
+# Options
+
+* [termread -t](Dash-t.md)
+* [termread -b](Dash-b.md)
+
 # Why
 
 I use a lot of different computers, and not all of them have a modern
-bash, but all of them can compile this simple code.  I find it useful
-to be able to query the terminal I'm on to try to figure out what its
-capabilities are before my startup files (.profile) tries to set my 
-default prompt.
+bash shell, but all of them can compile this simple code.
+I find it useful to be able to query the terminal I'm on to try to figure
+out what its capabilities are before my startup files (.profile) try to
+set my default prompt.
 
-# More
-
-* [termread -t](Dash-t.md)
-
-I have spent more time writing documentation about VT terminals than I
-have spent writing the code for this.
+If I happen to be connecting from PuTTY, that lets me set a bunch of
+defaults quickly, since it has more features than it's willing to report.

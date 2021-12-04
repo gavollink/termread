@@ -1,9 +1,11 @@
 # termread -t
 
+Request Terminal ID
+
 Sends two control strings to the terminal, and recieves back identifying
 information (sometimes).
 
-Resturns whatever is returned (octal escaping control characters) in a
+Returns whatever is returned (octal escaping control characters) in a
 bourne shell compatible variable string in the format:
 
 ```
@@ -13,7 +15,8 @@ TERMID='string'; export TERMID;
 ## Sends
 
 So long as the TERM environment variable identifies as
-vtXX, xtXX, or puXX it will send the following string to the terminal:
+vtXX, xtXX, or puXX, but NOT vt52,
+it will send the following string to the terminal:
 
 ```
 \033[c\005
@@ -57,9 +60,8 @@ My own testing, so far, has shown that it is harmless to push them both at the s
 While researching this program (but mostly the documentation),
 I did a lot of searching through archives of manuals on various
 serial terminals produced by Digital Equipment Corp (DEC), and
-took notes, which appear below.  The ones that don't fit here
+took notes, which appear below.  The info that dosn't fit here
 ended up on the [VT history](VT_History.md) page.
-
 
 # VT Terminals
 

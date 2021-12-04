@@ -44,6 +44,7 @@ char default_var[] = "OUT";
 
 const char vt_termreq[] = "\033Z";
 const char xt_termreq[] = "\033[c\005";
+const char xt_colorbg[] = "\033]11;?\033\\";
 const char xt_colorreq[] = "\033]4;%d;?\007";
 
 void
@@ -308,35 +309,34 @@ term_write()
 
     int ret = 0;
     if ( 1 == opt.termname ) {
-        if ( ( 2 < strlen( opt.envterm ) ) 
-            && ( 0 == strncmp( "vt", opt.envterm, 2 ) ) )
+        if ( ( 4 == strlen( opt.envterm ) ) 
+            && ( 0 == strcmp( "vt52", opt.envterm ) ) )
         {
-            ret = fprintf(fh, xt_termreq );
+            fprintf( stderr, "TERM env is 'vt52' (-t not supported)\n" );
+            exit(1);
         }
         else if ( ( 2 <= strlen( opt.envterm ) ) 
-            && ( 0 == strncmp( "xt", opt.envterm, 2 ) ) )
+            && (
+                 ( 0 == strncmp( "vt", opt.envterm, 2 ) )
+              || ( 0 == strncmp( "xt", opt.envterm, 2 ) )
+              || ( 0 == strncmp( "pu", opt.envterm, 2 ) )
+            )   )
         {
             ret = fprintf(fh, xt_termreq );
-        }
-        else if ( ( 2 <= strlen( opt.envterm ) ) 
-            && ( 0 == strncmp( "pu", opt.envterm, 2 ) ) )
-        {
-            ret = fprintf(fh, xt_termreq);
         } else {
-            ret = fprintf(fh, xt_termreq);
+            fprintf( stderr, "TERM env is '%s' (-t not supported)\n",
+                opt.termname );
+            exit(1);
         }
         fflush( fh );
-        opt.termname = 2;
     }
     else if ( 1 == opt.getcolor ) {
         ret = fprintf(fh, xt_colorreq, opt.color_num);
         fflush( fh );
-        opt.getcolor = 2;
     }
     else if ( 1 == opt.background ) {
-        ret = fprintf(fh, "%c%s%c%s", 033, "]11;?", 033, "\\" );
+        ret = fprintf(fg, xt_colorbg );
         fflush( fh );
-        opt.background = 2;
     }
     return ret;
 }
