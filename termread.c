@@ -310,9 +310,12 @@ term_write()
     int ret = 0;
     if ( 1 == opt.termname ) {
         if ( ( 4 == strlen( opt.envterm ) ) 
-            && ( 0 == strcmp( "vt52", opt.envterm ) ) )
+            && (   ( 0 == strncmp( "vt5", opt.envterm, 3 )
+                || ( 0 == strncmp( "vt6", opt.envterm, 3 ) ) )
+            ) )
         {
-            fprintf( stderr, "TERM env is 'vt52' (-t not supported)\n" );
+            fprintf( stderr, "TERM env is '%s' (-t not supported)\n",
+                opt.envterm );
             exit(1);
         }
         else if ( ( 2 <= strlen( opt.envterm ) ) 
@@ -325,7 +328,7 @@ term_write()
             ret = fprintf(fh, xt_termreq );
         } else {
             fprintf( stderr, "TERM env is '%s' (-t not supported)\n",
-                opt.termname );
+                opt.envterm );
             exit(1);
         }
         fflush( fh );
@@ -335,7 +338,7 @@ term_write()
         fflush( fh );
     }
     else if ( 1 == opt.background ) {
-        ret = fprintf(fg, xt_colorbg );
+        ret = fprintf(fh, xt_colorbg );
         fflush( fh );
     }
     return ret;
