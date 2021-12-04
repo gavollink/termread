@@ -54,6 +54,13 @@ My own testing, so far, has shown that it is harmless to push them both at the s
 
 # Actual Code Meanings
 
+While researching this program (but mostly the documentation),
+I did a lot of searching through archives of manuals on various
+serial terminals produced by Digital Equipment Corp (DEC), and
+took notes, which appear below.  The ones that don't fit here
+ended up on the [VT history](VT_History.md) page.
+
+
 # VT Terminals
 
 The following is scraped out of old DEC manuals and xterm source code.
@@ -141,50 +148,4 @@ numeric order and each number always has the same meaning.
 
 *NOTE* VT550 means options found in the DEC manual for VT550, but
 could have been present in other terminals before or after.
-
-
-## VT50 Series, the VT exception
-
-*Not supported by this software*
-
-VT50, 52, 55 and 62 terminals ONLY responded to DECID ( `\033Z` ).
-This option doesn't use DECID because VT52 terminals are exceedingly rare,
-and I haven't found any soft terminals that respond to DECID,
-but not *Primary DA*.
-
-Exception: xterm itself CAN be forced into vt52 compatibility mode, and
-in that case alone, this code will ONLY be returned from DECID.  That
-means this option would not illicit a response from `xterm` in that odd
-scenario.
-
-| Action | Code | Definition |
-|----|----|----|
-| Send    | `\033Z`  | DECID sequence |
-| Recieve | `\033/Z` | VT52 response |
-
-## VT05, dumb
-
-Introduced in 1970, before ASCII had full adoption, 
-I haven't seen anything that knows how to talk to one. 
-It doesn't even have an entry in the termcap database, so modern
-systems are clearly not expected to see one.
-
-I found a 'tiff' file of the documenation for one of these, and it appears
-to be a dumb terminal, with no support for escape codes.
-
-Some characters do have ... unexpected meanings though:
-
-| Char | Action |
-|---|---|
-| 9  | Move cursor down (No tab key?) |
-| 14 | Cursor Addressing |
-| 24 | Advance cursor right |
-| 26 | Move cursor up |
-| 27 | ALT (No Esc key?) |
-| 30 | Erase from cursor to end of line |
-| 31 | Erase screen |
-
-Worse, most of these need NULL padding after them (depending on the
-BAUD rate) because the circuitry couldn't do the operation and keep
-up with ongoing communication stream).
 
