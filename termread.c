@@ -22,6 +22,7 @@ struct sopt {
     int background; /* VT102 background query */
     int getcolor;   /* VT102 color query */
     int termname;   /* VTxx terminal caps query */
+    int term2da;
     int wantstat;
     int color_num;
     long int delay;
@@ -39,11 +40,13 @@ struct sopt {
 
 char background_var[] = "TERM_BG";
 char termname_var[] = "TERMID";
+char term2da_var[] = "TERM2DA";
 char getcolor_var[] = "COLOR";
 char default_var[] = "OUT";
 
 const char vt_termreq[] = "\033Z";
 const char xt_termreq[] = "\033[c\005";
+const char xt_term2da[] = "\033[>c";
 const char xt_colorbg[] = "\033]11;?\033\\";
 const char xt_colorreq[] = "\033]4;%d;?\007";
 
@@ -58,7 +61,10 @@ prinhelp(void)
     fprintf(out, "%s [-t] [-b] [-d <nnnn>] [-h]\n", opt.argv0 );
     fprintf(out, "\n");
     fprintf(out, "    -t\n");
-    fprintf(out, "    --term    Ask for terminal ident\n");
+    fprintf(out, "    --term    Ask for terminal ident 'primary DA'\n");
+    fprintf(out, "\n");
+    fprintf(out, "    -2\n");
+    fprintf(out, "    --term2   Ask for terminal ident 'secondary DA'\n");
     fprintf(out, "\n");
     fprintf(out, "    -b\n");
     fprintf(out, "    --bg      Ask for terminal background color\n");
@@ -127,6 +133,16 @@ args( int argc, char *argv[], struct sopt* opt )
             ) )
         {
             opt->termname = 1;
+        }
+        else if (
+            (      ( ( strlen("-2") <= strlen(argv[cx]) )
+                && ( 0 == strcmp("-2", argv[cx]) ) )
+            ) || (
+                   ( ( strlen("--term2") <= strlen(argv[cx]) )
+                && ( 0 == strcmp("--term2", argv[cx]) ) )
+            ) )
+        {
+            opt->term2da = 1;
         }
         else if (
             (      ( ( strlen("-s") <= strlen(argv[cx]) )
@@ -235,6 +251,9 @@ args( int argc, char *argv[], struct sopt* opt )
         if ( opt->termname ) {
             opt->var = termname_var;
         }
+        else if ( opt->term2da ) {
+            opt->var = term2da_var;
+        }
         else if ( opt->background ) {
             opt->var = background_var;
         }
@@ -331,6 +350,10 @@ term_write()
                 opt.envterm );
             exit(1);
         }
+        fflush( fh );
+    }
+    else if ( 1 == opt.term2da ) {
+        ret = fprintf(fh, xt_term2da);
         fflush( fh );
     }
     else if ( 1 == opt.getcolor ) {
