@@ -1,6 +1,6 @@
 # termread -t
 
-Request Terminal ID
+Request Terminal ID (primary DA)
 
 Sends two control strings to the terminal, and recieves back identifying
 information (sometimes).
@@ -30,17 +30,17 @@ TERMID=' <escaped sequence> '; export TERMID;
 
 Where sequence MAY be on of:
 
-| Sequence                        | Observed Terminal          |
-|:--------------------------------|---------------------------:|
-| `\033/1;2c`                     | Apple Terminal.app         |
-| `\033[?1;0c`                    | Microsoft Terminal (store) |
-| `\033[?65;1;9c`                 | Gnome Terminal             |
-| `\033[?65;1;9c`                 | lxterminal (Linux)         |
-| `\033[?64;1;2;6;9;15;18;21;22c` | xterm (Linux)              |
-| `\033[?1;2c\033[?1;2c`          | rxvt (Linux)               |
-| `\033[?6cPuTTY`                 | PuTTY (Windows)            |
-| `\033[?6c`                      | xvt (Linux)                |
-| `\033[?6c`                      | Linux hw console           |
+| Sequence                        | Observed Terminal             |
+|:--------------------------------|:------------------------------|
+| `\033/1;2c`                     | Apple Terminal.app (Catalina) |
+| `\033[?1;0c`                    | Microsoft Terminal (store)    |
+| `\033[?65;1;9c`                 | Gnome Terminal                |
+| `\033[?65;1;9c`                 | lxterminal (Linux)            |
+| `\033[?64;1;2;6;9;15;18;21;22c` | xterm (Linux)                 |
+| `\033[?1;2c\033[?1;2c`          | rxvt (Linux)                  |
+| `\033[?6cPuTTY`                 | PuTTY (Windows)               |
+| `\033[?6c`                      | xvt (Linux)                   |
+| `\033[?6c`                      | Linux console (Ubuntu 20.02)  |
 
 *NOTE* That at least under Ubuntu, `xterm` is claiming to emulate
 the features of a VT400 series terminal with 8 available options, see below.

@@ -26,16 +26,32 @@ $ echo $TERMID
 
 # Options
 
-* [termread -t](Dash-t.md)
-* [termread -b](Dash-b.md)
+- [termread -t](Dash-t.md)
+- [termread -2](Dash-2.md)
+- [termread -b](Dash-b.md)
+- `termread -c <n>` -- Like -b, but ask for color number description)
+    - Like -b, but ask for color number description)
+- `termread --env MYSTR`
+    - Use MYSTR instead of the default name in the output.
+
+```
+$ termread -c 231 --env CLR231
+CLR231='\033]4;231;rgb:ffff/ffff/ffff\07'; export CLR231; 
+$ eval `termread -c 231 --env CLR231`
+$ echo $CLR231
+\033]4;231;rgb:ffff/ffff/ffff\07
+```
 
 # Why
 
-I use a lot of different computers, and not all of them have a modern
-bash shell, but all of them can compile this simple code.
+There is a shell built-in called 'read' that can do part of this,
+but it only works for me on `bash` and only on some systems.
+All of these systems can compile this simple code.
+
 I find it useful to be able to query the terminal I'm on to try to figure
 out what its capabilities are before my startup files (.profile) try to
 set my default prompt.
 
-If I happen to be connecting from PuTTY, that lets me set a bunch of
-defaults quickly, since it has more features than it's willing to report.
+Between `-t` and `-2`, I can usually get enough into environment variables
+that I know which terminal program I happen to be using (or close enough).
+
