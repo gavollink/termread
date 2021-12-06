@@ -29,7 +29,7 @@ $ echo $TERMID
 - [termread -t](Dash-t.md)
 - [termread -2](Dash-2.md)
 - [termread -b](Dash-b.md)
-- `termread -c <n>` -- Like -b, but ask for color number description)
+- `termread -c <n>`
     - Like -b, but ask for color number description)
 - `termread --env MYSTR`
     - Use MYSTR instead of the default name in the output.
@@ -54,4 +54,24 @@ set my default prompt.
 
 Between `-t` and `-2`, I can usually get enough into environment variables
 that I know which terminal program I happen to be using (or close enough).
+
+## Decision to not support the VT52/55/62
+
+This software doesn't bother with DECID because VT50 class terminals are
+exceedingly rare, and I haven't found any soft terminals that
+respond to DECID, but not *Primary DA*, with one very weird exception.
+
+The X11 `xterm` software can be started in vt52 compatibility mode, and
+in that case alone, the terminal type will ONLY be returned from a
+DECID sequence.
+
+That means this option would not illicit a response from `xterm` in that
+one scenario.
+
+Useful to note that `xterm` can _also_ be started in _Tektronix_ modes
+which wouldn't be compatible with this at all.
+
+# Just because
+
+Check out the [VT History](VT_History.md) page.
 

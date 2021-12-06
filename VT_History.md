@@ -29,7 +29,7 @@ This was the first computer monitor.  Just like modern monitors, it relied
 entirely on the computer that was attached to it to tell it exactly what to
 display.
 
-## Screen-based Serial Terminals
+# Screen-based Serial Terminals
 
 The initial point of a screen based serial terminal is to replace
 reams of paper that a teletype would produce with an ephemeral
@@ -113,21 +113,14 @@ for this terminal would have little issue talking with a modern
 That said, its capabilities were very small in relation to the 
 expectations of a modern user.
 
-### Decision to not support the VT52/55/62
+## VT100 series
 
-This software doesn't bother with DECID because VT50 terminals are
-exceedingly rare, and I haven't found any soft terminals that
-respond to DECID, but not *Primary DA*, with one very weird exception.
+August 1978, the VT100 was brought to market.  This series proved to be 
+very successful and created a HUGE number of clones, making the VT100 the
+most emulated terminal in the world.  On any modern system, the capabilities
+of a VT100 are taken for granted.
 
-The X11 `xterm` software can be started in vt52 compatibility mode, and
-in that case alone, the terminal type will ONLY be returned from a
-DECID sequence.
-
-That means this option would not illicit a response from `xterm` in that
-one scenario.
-
-Useful to note that `xterm` can _also_ be started in _Tektronix_ modes
-which wouldn't be compatible with this at all.
+Note the VT101 and VT102 are reduced feature versions of the VT100.
 
 # Sources
 
