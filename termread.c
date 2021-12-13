@@ -19,10 +19,11 @@ static struct termios orig_term, new_term;
 struct sopt {
     int needhelp;   /* Help is needed */
     int wanthelp;   /* Help is explicitly requested */
-    int background; /* VT102 background query */
-    int getcolor;   /* VT102 color query */
-    int termname;   /* VTxx terminal caps query */
+    int background; /* VT100 background query */
+    int getcolor;   /* VT100 color query */
+    int termname;   /* VT100 + terminal caps query */
     int term2da;
+    int ignoreterm; /* Ignore $TERM */
     int wantstat;
     int color_num;
     long int delay;
@@ -49,6 +50,7 @@ const char xt_termreq[] = "\033[c\005";
 const char xt_term2da[] = "\033[>c";
 const char xt_colorbg[] = "\033]11;?\033\\";
 const char xt_colorreq[] = "\033]4;%d;?\007";
+const char xt_eraseline[] = "\033[9D\033[2K";
 
 void
 prinhelp(void)
@@ -58,7 +60,9 @@ prinhelp(void)
         out = stdout;
     }
     fprintf(out, "\n");
-    fprintf(out, "%s [-t] [-b] [-d <nnnn>] [-h]\n", opt.argv0 );
+    fprintf(out, "%s [!] [-t] [-b] [-d <nnnn>] [-h]\n", opt.argv0 );
+    fprintf(out, "\n");
+    fprintf(out, "    !         Ignore TERM env.\n");
     fprintf(out, "\n");
     fprintf(out, "    -t\n");
     fprintf(out, "    --term    Ask for terminal ident 'primary DA'\n");
@@ -110,6 +114,9 @@ args( int argc, char *argv[], struct sopt* opt )
         {
             opt->needhelp = 1;
             opt->wanthelp = 1;
+        }
+        else if ( 0 == strcmp("!", argv[cx] ) ) {
+            opt->ignoreterm = 1;
         }
         else if (
             (      ( ( strlen("-b") <= strlen(argv[cx]) )
@@ -169,15 +176,20 @@ args( int argc, char *argv[], struct sopt* opt )
             ) )
         {
             int getcolor = 0;
+            int gc_ok    = 0;
             if ( is_next( argc, cx ) ) {
-                getcolor = atoi( argv[1 + cx] );
-                if ( 0 <= getcolor ) {
+                char *endptr = NULL;
+                getcolor = strtol( argv[1 + cx], &endptr, 10 );
+                if (   ( endptr != argv[1 + cx] )
+                    && ( endptr - argv[1 + cx] == strlen(argv[1+cx]) )  )
+                {
+                    gc_ok = 1;
                     opt->getcolor = 1;
                     opt->color_num = getcolor;
                     cx++;
                 }
             }
-            if ( ! getcolor ) {
+            if ( ! gc_ok ) {
                 fprintf(stderr,
                     "Unable to read color num after option '%s'\n",
                     argv[cx]);
@@ -193,14 +205,26 @@ args( int argc, char *argv[], struct sopt* opt )
             ) )
         {
             int getdelay = 0;
+            int gd_ok    = 0;
             if ( is_next( argc, cx ) ) {
-                getdelay = atoi( argv[1 + cx] );
-                if ( 0 < getdelay ) {
-                    opt->delay = getdelay;
+                char *endptr = NULL;
+                getdelay = strtol( argv[1 + cx], &endptr, 10 );
+                if (   ( endptr != argv[1 + cx] )
+                    && ( endptr - argv[1 + cx] == strlen(argv[1+cx]) )  )
+                {
+                    if ( 0 >= getdelay ) {
+                        fprintf(stderr,
+                            "Not a valid delay '%s' for option '%s'\n",
+                            argv[cx+1], argv[cx]);
+                        opt->needhelp = 1;
+                    } else {
+                        opt->delay = getdelay;
+                    }
                     cx++;
+                    gd_ok = 1; /* Even if not, error already handled! */
                 }
             }
-            if ( ! getdelay ) {
+            if ( ! gd_ok ) {
                 fprintf(stderr,
                     "Unable to read delay after option '%s'\n",
                     argv[cx]);
@@ -267,7 +291,9 @@ args( int argc, char *argv[], struct sopt* opt )
     if ( 0 == opt->delay ) {
         opt->delay = 1000;      /* ~ 1000 milliseconds or 1.0 seconds */
     }
-    if ( NULL == opt->envterm ) {
+    if (   ( NULL == opt->envterm )
+        || ( 1 == opt->ignoreterm ) )
+    {
         opt->envterm = "xterm-256color";
     }
     return 1;
@@ -302,6 +328,34 @@ resetTermios(void)
         fprintf(stderr, "Unable to reset terminal NBLOCK status: %s\n",
             strerror(errno) );
     }
+}
+
+int
+term_cleanline()
+{
+    FILE * fh = opt.termfh;
+    if ( ! opt.termfh ) {
+        int fp = open( opt.term, O_WRONLY|O_NOCTTY );
+        if ( 0 <= fp ) {
+            fh = fdopen( fp, "w" );
+            if ( fh ) {
+                opt.termfh = fh;
+            } else {
+                fprintf( stderr, "Unable to open '%s': %s\n",
+                    opt.term, strerror(errno) );
+                return 0;
+            }
+        } else {
+            fprintf( stderr, "Unable to open '%s': %s\n",
+                opt.term, strerror(errno) );
+            return 0;
+        }
+    }
+
+    int ret = 0;
+    ret = fprintf(fh, xt_eraseline );
+    fflush( fh );
+    return ret;
 }
 
 int
@@ -342,6 +396,7 @@ term_write()
                  ( 0 == strncmp( "vt", opt.envterm, 2 ) )
               || ( 0 == strncmp( "xt", opt.envterm, 2 ) )
               || ( 0 == strncmp( "pu", opt.envterm, 2 ) )
+              || ( 0 == strncmp( "co", opt.envterm, 2 ) )
             )   )
         {
             ret = fprintf(fh, xt_termreq );
@@ -362,6 +417,10 @@ term_write()
     }
     else if ( 1 == opt.background ) {
         ret = fprintf(fh, xt_colorbg );
+        fflush( fh );
+    }
+    else {
+        ret = fprintf(fh, xt_eraseline );
         fflush( fh );
     }
     return ret;
@@ -499,6 +558,8 @@ main( int argc, char *argv[] )
 
     got = readInput(bsz, in);
 
+    term_cleanline();
+
     if ( got ) {
         printf( "%s='%s'; export %s; \n", opt.var, in, opt.var );
     }
@@ -515,4 +576,5 @@ main( int argc, char *argv[] )
         printf("\n" );
         // printf("# tty : %s\n", opt.term );
     }
+    fclose(opt.termfh);
 }

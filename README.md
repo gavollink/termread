@@ -2,6 +2,19 @@
 
 Very small C utility for reading information about a modern soft terminal.
 
+In these modern times, almost every conceivable terminal sets the TERM
+environment variable to '**xterm**'.
+Thing is, with the exception of default starts of X11, I don't
+actually use 'xterm' and the actual terminal I'm using may
+have a better termcap on the system I'm attached to, and might
+support colors, even though it doesn't say so.
+
+This is a UNIX style (meaning very small) utility that is meant to
+be used in a script (like a .bashrc) to help figure out what the
+terminal can do.
+
+Generally, if TERM is not 'xterm', my scripts won't call this at all.
+
 *I have spent more time writing documentation about VT terminals than I
 have spent writing the code for this.*
 
@@ -23,6 +36,13 @@ $ eval `termread -t`
 $ echo $TERMID
 \033[65;1;9c
 ```
+
+# Observed Output
+
+Though not complete, I put together a page of how the terminals
+I have tested react to **termread**.
+
+- [Observed Output](Observed_Output.md)
 
 # Options
 
