@@ -53,6 +53,10 @@ I have tested react to **termread**.
     - Like -b, but ask for color number description)
 - `termread --env MYSTR`
     - Use MYSTR instead of the default name in the output.
+    - Only valid with other options.
+- `termread ! ...`
+    - Ignore TERM environment variable (try anyway)
+    - Only valid with other options.
 
 ```
 $ termread -c 231 --env CLR231
