@@ -80,7 +80,7 @@ prinhelp(void)
     fprintf(out, "    -d <nnnn>\n");
     fprintf(out, "    --delay <nnnn>\n");
     fprintf(out, "              Milliseconds to wait for first reply.\n");
-    fprintf(out, "              default: 1000 ( 1.0 seconds ).\n");
+    fprintf(out, "              default: 500 ( 0.5 seconds ).\n");
     fprintf(out, "\n");
     fprintf(out, "    -s\n");
     fprintf(out, "    --stats   Print stats info after read response.\n");
@@ -289,12 +289,12 @@ args( int argc, char *argv[], struct sopt* opt )
     }
     /* Set default delay */
     if ( 0 == opt->delay ) {
-        opt->delay = 1000;      /* ~ 1000 milliseconds or 1.0 seconds */
+        opt->delay = 500;      /* ~ 500 milliseconds or 0.5 seconds */
     }
     if (   ( NULL == opt->envterm )
         || ( 1 == opt->ignoreterm ) )
     {
-        opt->envterm = "xterm-256color";
+        opt->envterm = "xterm";
     }
     return 1;
 }
