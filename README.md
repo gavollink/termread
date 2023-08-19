@@ -13,8 +13,6 @@ This is a UNIX style (meaning very small) utility that is meant to
 be used in a script (like a .bashrc) to help figure out what the
 terminal can do.
 
-Generally, if TERM is not 'xterm', my scripts won't call this at all.
-
 *I have spent more time writing documentation about VT terminals than I
 have spent writing the code for this.*
 
@@ -22,11 +20,11 @@ have spent writing the code for this.*
 
 ```
 $ termread -t
-TERMID='\033[65;1;9c'; export TERMID; 
+TERMID='\033[65;1;9c'; export TERMID;
 $ termread -b
-TERMBG='\033]11;rgb:2e2e/3434/3636\033\'; export TERMBG; 
+TERMBG='\033]11;rgb:2e2e/3434/3636\033\'; export TERMBG;
 $ termread -c 231
-COLOR='\033]4;231;rgb:ffff/ffff/ffff\07'; export COLOR; 
+COLOR='\033]4;231;rgb:ffff/ffff/ffff\07'; export COLOR;
 ```
 
 In practice, each of these would be wrapped in an eval:
@@ -60,7 +58,7 @@ I have tested react to **termread**.
 
 ```
 $ termread -c 231 --env CLR231
-CLR231='\033]4;231;rgb:ffff/ffff/ffff\07'; export CLR231; 
+CLR231='\033]4;231;rgb:ffff/ffff/ffff\07'; export CLR231;
 $ eval `termread -c 231 --env CLR231`
 $ echo $CLR231
 \033]4;231;rgb:ffff/ffff/ffff\07
@@ -79,21 +77,41 @@ set my default prompt.
 Between `-t` and `-2`, I can usually get enough into environment variables
 that I know which terminal program I happen to be using (or close enough).
 
-## Decision to not support the VT52/55/62
+## Support for TERM=
 
-This software doesn't bother with DECID because VT50 class terminals are
-exceedingly rare, and I haven't found any soft terminals that
-respond to DECID, but not *Primary DA*, with one very weird exception.
+This program will JUST WORK if the TERM environment variable is set to
+
+- xterm
+- putty
+- nsterm
+- konsole
+- kitty
+- vt...
+
+NOTE:
+The first year + of this software did not support VT50/52/55/62,
+as these require `DECID` send instead of `Primary DA` which all
+modern terminals support.
+
+However, adding this support was fairly trivial,
+so I finally made the change...
+
+Basically, if TERM is set to any of these four;
+"vt50", "vt52", "vt55", or "vt62", the program will send a `DECID` request.
+
+### Weird Exception ###
+
+I haven't found any soft terminals that respond to `DECID`,
+but not `Primary DA`, with one very weird exception.
 
 The X11 `xterm` software can be started in vt52 compatibility mode, and
 in that case alone, the terminal type will ONLY be returned from a
-DECID sequence.
+`DECID` sequence where a `Primary DA` sequence will be ignored.
 
-That means this option would not illicit a response from `xterm` in that
-one scenario.
-
-Useful to note that `xterm` can _also_ be started in _Tektronix_ modes
+Useful to note that `xterm` can *also* be started in *Tektronix* modes
 which wouldn't be compatible with this at all.
+I have never encountered a program that only talks *Tektronix*, so I've
+never considered trying to add such support here.
 
 # Just because
 

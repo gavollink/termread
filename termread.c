@@ -1,7 +1,10 @@
 /****************************************************************************
  * termread.c
  *
- * Author: Gary Allen Vollink
+ * Linux/MacOS untility to query VT compatible terminals for basic
+ *  identifiers and capabilities.
+ *
+ * LICENSE: Embedded at bottom...
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,17 +15,24 @@
 #include <errno.h>
 #include <time.h>
 
+const char VERSION[] = "1.09";
+
+int term_cleanline();
 int is_next( int argc, int cx );
+void printlicense( void );
 
 static struct termios orig_term, new_term;
 
 struct sopt {
     int needhelp;   /* Help is needed */
     int wanthelp;   /* Help is explicitly requested */
+    int wantversion;  /* Version is requested */
+    int wantlicense;  /* License is requested */
     int background; /* VT100 background query */
     int getcolor;   /* VT100 color query */
-    int termname;   /* VT100 + terminal caps query */
+    int termname;   /* VT* terminal caps query */
     int term2da;
+    int justerase;  /* VT* terminal current line erase sequence */
     int ignoreterm; /* Ignore $TERM */
     int wantstat;
     int color_num;
@@ -47,6 +57,7 @@ char getcolor_var[] = "COLOR";
 char default_var[] = "OUT";
 
 const char vt_termreq[] = "\033Z";
+const char vt_eraseline[] = "\033\015\033K";
 const char xt_termreq[] = "\033[c\005";
 const char xt_term2da[] = "\033[>c";
 const char xt_colorbg[] = "\033]11;?\033\\";
@@ -62,6 +73,17 @@ const char xt_eraseline[] = "\033[9D\033[2K";
     };
 
 void
+prinversion(void)
+{
+    FILE *out = stderr;
+    fprintf(out, "\n");
+    fprintf(out, "%s VERSION: %s\n",
+                 opt.argv0, VERSION );
+
+    return;
+}
+
+void
 prinusage(void)
 {
     FILE *out = stderr;
@@ -69,10 +91,12 @@ prinusage(void)
         out = stdout;
     }
     fprintf(out, "\n");
-    fprintf(out, "%s [!] [-t] [-2] [-b] [-c <nnn>] [-d <nnnn>] [-s]\n",
+    fprintf(out, "%s [!] [-t] [-2] [-b] [-c <nnn>] [-d <nnnn>] [-s] [-v]\n",
                  opt.argv0 );
-    fprintf(out, "%s --help\n",
+    fprintf(out, "    OR\n");
+    fprintf(out, "%s --help | --version | --license\n",
                  opt.argv0 );
+    fprintf(out, "\n");
 
     return;
 }
@@ -99,6 +123,11 @@ prinhelp(void)
     fprintf(out, "    -c <nnn>\n");
     fprintf(out, "    --color <nnn>\n");
     fprintf(out, "              Ask for the RGB of a color by number.\n");
+    if ( opt.debug ) {
+        fprintf(out, "\n");
+        fprintf(out, "    --erase   Print 'erase current line' sequence,\n");
+        fprintf(out, "               and exit immediately.\n");
+    }
     fprintf(out, "\n");
     fprintf(out, "  OPTIONS:\n");
     fprintf(out, "\n");
@@ -118,9 +147,6 @@ prinhelp(void)
     fprintf(out, "\n");
     fprintf(out, "    -v\n");
     fprintf(out, "    --verbose Extra output.\n");
-    fprintf(out, "\n");
-    fprintf(out, "    -h\n");
-    fprintf(out, "    --help    This help.\n");
     if ( opt.debug ) {
         fprintf(out, "\n");
         fprintf(out, "    -o </dev/tt...>\n");
@@ -128,6 +154,18 @@ prinhelp(void)
         fprintf(out, "              Open this instead of current term.\n");
         fprintf(out, "              Probably won't work.\n");
     }
+    fprintf(out, "\n");
+    fprintf(out, "  ABOUT:\n");
+    fprintf(out, "\n");
+    fprintf(out, "    -L\n");
+    fprintf(out, "    --license Print license and exit.\n");
+    fprintf(out, "\n");
+    fprintf(out, "    -V\n");
+    fprintf(out, "    --version Print version number (%s) and exit.\n",
+                                                    VERSION);
+    fprintf(out, "\n");
+    fprintf(out, "    -h\n");
+    fprintf(out, "    --help    This help.\n");
     if ( opt.wanthelp ) {
         fprintf(out, "\n");
         fprintf(out, "Effective TERM='%s'\n", opt.envterm);
@@ -306,17 +344,6 @@ args( int argc, char *argv[] )
             }
         }
         else if (
-            (      ( ( strlen("-v") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("-v", argv[cx]) ) )
-            ) || (
-                   ( ( strlen("--ve") <= strlen(argv[cx]) )
-                && ( 0 == strncmp("--ve", argv[cx], strlen("--ve")) ) )
-            ) )
-        {
-            opt.debug = 1;
-            DEBUG("--verbose DEBUGGING ON.\n", NULL);
-        }
-        else if (
             (      ( ( strlen("-o") <= strlen(argv[cx]) )
                 && ( 0 == strcmp("-o", argv[cx]) ) )
             ) || (
@@ -335,7 +362,51 @@ args( int argc, char *argv[] )
                 opt.needhelp = 1;
             }
         }
-        else {
+        else if (
+            (      ( ( strlen("-L") == strlen(argv[cx]) )
+                && ( 0 == strcmp("-L", argv[cx]) ) )
+            ) || (
+                   ( strlen("--li") <= strlen(argv[cx]) )
+                && ( strlen("--license") >= strlen(argv[cx]) )
+                && ( 0 == strncmp("--license", argv[cx], strlen(argv[cx]) ) )
+            )   )
+        {
+            opt.wantlicense = 1;
+            action_requested++;
+            DEBUG("--version ACTION requested.\n", NULL);
+        }
+        else if (
+            (      ( ( strlen("-V") == strlen(argv[cx]) )
+                && ( 0 == strcmp("-V", argv[cx]) ) )
+            ) || (
+                   ( strlen("--vers") <= strlen(argv[cx]) )
+                && ( strlen("--version") >= strlen(argv[cx]) )
+                && ( 0 == strncmp("--version", argv[cx], strlen(argv[cx]) ) )
+            ) )
+        {
+            opt.wantversion = 1;
+            action_requested++;
+            DEBUG("--version ACTION requested.\n", NULL);
+        }
+        else if (
+            (      ( ( strlen("-v") <= strlen(argv[cx]) )
+                && ( 0 == strcmp("-v", argv[cx]) ) )
+            ) || (
+                   ( strlen("--verb") <= strlen(argv[cx]) )
+                && ( strlen("--verbose") >= strlen(argv[cx]) )
+                && ( 0 == strncmp("--verbose", argv[cx], strlen(argv[cx]) ) )
+            ) )
+        {
+            opt.debug = 1;
+            DEBUG("--verbose DEBUGGING ON.\n", NULL);
+        }
+        else if ( ( strlen("--erase") == strlen(argv[cx]) )
+                  && ( 0 == strcmp("--erase", argv[cx] ) ) )
+        {
+            opt.justerase = 1;
+            action_requested++;
+            DEBUG("--erase ACTION (exclusive) ON.\n", NULL);
+        } else {
             fprintf( stderr, "Unknown option %d: [%s]\n", cx, argv[cx] );
             opt.needhelp = 1;
         }
@@ -345,7 +416,7 @@ args( int argc, char *argv[] )
         opt.envterm = "xterm";
         DEBUG("TERM empty, forcing actions for [%s]\n", opt.envterm);
     }
-    if ( opt.needhelp || opt.wanthelp ) {
+    if ( opt.needhelp || opt.wanthelp || opt.wantversion || opt.wantlicense ) {
         // SIDE EFFECT -- NO DEBUG WARNING ABOUT --var BELOW.
         action_requested = 1;
     }
@@ -412,7 +483,7 @@ resetTermios(void)
 }
 
 int
-term_cleanline()
+term_open()
 {
     FILE * fh = opt.termfh;
     if ( ! opt.termfh ) {
@@ -432,9 +503,48 @@ term_cleanline()
             return 0;
         }
     }
+    if ( opt.termfh ) {
+        return 1;
+    }
+    return 0;
+}
+
+int
+term_close()
+{
+    int chk = 0;
+    if ( opt.termfh ) {
+        chk = fclose(opt.termfh);
+        opt.termfh = NULL;
+    }
+    if ( 0 == chk ) {
+        return 1;
+    }
+    return 0;
+}
+
+int
+term_cleanline()
+{
+    FILE * fh;
+    if (term_open()) {
+        fh = opt.termfh;
+    } else {
+        return 0;
+    }
 
     int ret = 0;
-    ret = fprintf(fh, xt_eraseline );
+    if ( ( 4 == strlen( opt.envterm ) )
+        && (   ( 0 == strncmp( "vt50", opt.envterm, 4 ) )
+            || ( 0 == strncmp( "vt52", opt.envterm, 4 ) )
+            || ( 0 == strncmp( "vt55", opt.envterm, 4 ) )
+            || ( 0 == strncmp( "vt62", opt.envterm, 4 ) )
+        )   )
+    {
+        ret = fprintf(fh, vt_eraseline );
+    } else {
+        ret = fprintf(fh, xt_eraseline );
+    }
     fflush( fh );
     return ret;
 }
@@ -442,23 +552,11 @@ term_cleanline()
 int
 term_write()
 {
-    FILE * fh = opt.termfh;
-    if ( ! opt.termfh ) {
-        int fp = open( opt.term, O_WRONLY|O_NOCTTY );
-        if ( 0 <= fp ) {
-            fh = fdopen( fp, "w" );
-            if ( fh ) {
-                opt.termfh = fh;
-            } else {
-                fprintf( stderr, "Unable to open '%s': %s\n",
-                    opt.term, strerror(errno) );
-                return 0;
-            }
-        } else {
-            fprintf( stderr, "Unable to open '%s': %s\n",
-                opt.term, strerror(errno) );
-            return 0;
-        }
+    FILE * fh;
+    if (term_open()) {
+        fh = opt.termfh;
+    } else {
+        return 0;
     }
 
     int ret = 0;
@@ -470,13 +568,14 @@ term_write()
         }
 
         if ( ( 4 == strlen( opt.envterm ) )
-            && (   ( 0 == strncmp( "vt5", opt.envterm, 3 )
-                || ( 0 == strncmp( "vt6", opt.envterm, 3 ) ) )
-            ) )
+            && (   ( 0 == strncmp( "vt50", opt.envterm, 4 ) )
+                || ( 0 == strncmp( "vt52", opt.envterm, 4 ) )
+                || ( 0 == strncmp( "vt55", opt.envterm, 4 ) )
+                || ( 0 == strncmp( "vt62", opt.envterm, 4 ) )
+           )   )
         {
-            fprintf( stderr, "TERM env is '%s' (-t not supported)\n",
-                opt.envterm );
-            exit(1);
+            // THIS IS VERY RARE, WILL PROBABLY NEVER BE USED...
+            ret = fprintf(fh, vt_termreq );
         }
         else if ( ( 3 <= strlen( opt.envterm ) )
             && (
@@ -503,8 +602,20 @@ term_write()
             DEBUG("Set default --term2 var to %s\n", opt.var );
         }
 
-        ret = fprintf(fh, xt_term2da);
-        fflush( fh );
+        if ( ( 4 == strlen( opt.envterm ) )
+            && (   ( 0 == strncmp( "vt50", opt.envterm, 4 ) )
+                || ( 0 == strncmp( "vt52", opt.envterm, 4 ) )
+                || ( 0 == strncmp( "vt55", opt.envterm, 4 ) )
+                || ( 0 == strncmp( "vt62", opt.envterm, 4 ) )
+           )   )
+        {
+            fprintf( stderr,
+                    "# Current effective TERM='%s', does not support --term2\n",
+                    opt.envterm);
+        } else {
+            ret = fprintf(fh, xt_term2da);
+            fflush( fh );
+        }
     }
     else if ( 1 == opt.getcolor ) {
         opt.getcolor = 0;
@@ -513,8 +624,20 @@ term_write()
             DEBUG("Set default --color var to %s\n", opt.var );
         }
 
-        ret = fprintf(fh, xt_colorreq, opt.color_num);
-        fflush( fh );
+        if ( ( 4 == strlen( opt.envterm ) )
+            && (   ( 0 == strncmp( "vt50", opt.envterm, 4 ) )
+                || ( 0 == strncmp( "vt52", opt.envterm, 4 ) )
+                || ( 0 == strncmp( "vt55", opt.envterm, 4 ) )
+                || ( 0 == strncmp( "vt62", opt.envterm, 4 ) )
+           )   )
+        {
+            fprintf( stderr,
+                    "# Current effective TERM='%s', does not support --color\n",
+                    opt.envterm);
+        } else {
+            ret = fprintf(fh, xt_colorreq, opt.color_num);
+            fflush( fh );
+        }
     }
     else if ( 1 == opt.background ) {
         opt.background = 0;
@@ -523,11 +646,33 @@ term_write()
             DEBUG("Set default --bg var to %s\n", opt.var );
         }
 
-        ret = fprintf(fh, xt_colorbg );
-        fflush( fh );
+        if ( ( 4 == strlen( opt.envterm ) )
+            && (   ( 0 == strncmp( "vt50", opt.envterm, 4 ) )
+                || ( 0 == strncmp( "vt52", opt.envterm, 4 ) )
+                || ( 0 == strncmp( "vt55", opt.envterm, 4 ) )
+                || ( 0 == strncmp( "vt62", opt.envterm, 4 ) )
+           )   )
+        {
+            fprintf( stderr,
+                    "# Current effective TERM='%s', does not support --bg\n",
+                    opt.envterm);
+        } else {
+            ret = fprintf(fh, xt_colorbg );
+            fflush( fh );
+        }
     }
     else {
-        ret = fprintf(fh, xt_eraseline );
+        if ( ( 4 == strlen( opt.envterm ) )
+            && (   ( 0 == strncmp( "vt50", opt.envterm, 4 ) )
+                || ( 0 == strncmp( "vt52", opt.envterm, 4 ) )
+                || ( 0 == strncmp( "vt55", opt.envterm, 4 ) )
+                || ( 0 == strncmp( "vt62", opt.envterm, 4 ) )
+            )   )
+        {
+            ret = fprintf(fh, vt_eraseline );
+        } else {
+            ret = fprintf(fh, xt_eraseline );
+        }
         fflush( fh );
     }
     return ret;
@@ -683,6 +828,8 @@ do_term()
         }
     }
 
+    term_close();
+
     return 0;
 }
 
@@ -695,14 +842,53 @@ main( int argc, char *argv[] )
         prinhelp();
         exit( 0 );
     }
-    if ( opt.needhelp ) {
+    else if ( opt.needhelp ) {
         prinusage();
         exit( 1 );
+    }
+    else if ( opt.wantlicense ) {
+        printlicense();
+        exit( 0 );
+    }
+    else if ( opt.wantversion ) {
+        prinversion();
+        exit( 0 );
+    }
+    else if ( opt.justerase ) {
+        term_cleanline();
+        exit( 0 );
     }
 
     do_term();
 
-    fclose(opt.termfh);
-
     exit(0);
 }
+
+void
+printlicense()
+{
+    printf("\n\
+MIT License\n\
+\n\
+TermRead v %s https://gitlab.home.vollink.com/external/termread/\n\
+Copyright (c) 2023, Gary Allen Vollink\n\
+\n\
+Permission is hereby granted, free of charge, to any person obtaining a copy\n\
+of this software and associated documentation files (the \"Software\"), to deal\n\
+in the Software without restriction, including without limitation the rights\n\
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n\
+copies of the Software, and to permit persons to whom the Software is\n\
+furnished to do so, subject to the following conditions:\n\
+\n\
+The above copyright notice and this permission notice shall be included in all\n\
+copies or substantial portions of the Software.\n\
+\n\
+THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n\
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n\
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n\
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n\
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n\
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n\
+SOFTWARE.\n\n", VERSION);
+}
+/* EOF termread.c */

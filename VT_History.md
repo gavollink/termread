@@ -53,7 +53,7 @@ to find is 1969's Datapoint 3300, by Computer Terminal Corporation.
 ## DEC VT05, Very dumb by today's standards
 
 Only a year later, in 1970, DEC introduced their screen based serial
-terminal which they called the _Video Terminal_, Model _VT_05.
+terminal which they called the *Video Terminal*, Model *VT*05.
 This terminal was capable of displaying 20 lines of 72 columns, or 1442
 characters.
 
@@ -81,8 +81,8 @@ followed by NULL padding characters (how many, depended on the
 BAUD rate) because the circuitry couldn't do the operation and keep
 up with an ongoing communication stream.
 
-I'll note that the VT50 docs throw shade at the need for NULL padding
-which was common across all serial terminals at the time.
+I'll note that the later VT50 docs throw shade at the need for NULL
+padding which was common across all serial terminals at the time.
 
 ## VT50 Series, Introducing ESC codes
 
