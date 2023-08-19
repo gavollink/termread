@@ -26,6 +26,7 @@ struct sopt {
     int ignoreterm; /* Ignore $TERM */
     int wantstat;
     int color_num;
+    int debug;
     long int delay;
     long int stat_d_first;
     long int stat_d_inter;
@@ -52,6 +53,30 @@ const char xt_colorbg[] = "\033]11;?\033\\";
 const char xt_colorreq[] = "\033]4;%d;?\007";
 const char xt_eraseline[] = "\033[9D\033[2K";
 
+#define DEBUG(str, __VA_ARGS__ ) if ( opt.debug ) \
+    { \
+        char *b = calloc(1024, 1); \
+        sprintf( b, "# DEBUG: %s", str );\
+        fprintf( stderr, b, __VA_ARGS__ ); \
+        free(b); \
+    };
+
+void
+prinusage(void)
+{
+    FILE *out = stderr;
+    if ( opt.wanthelp ) {
+        out = stdout;
+    }
+    fprintf(out, "\n");
+    fprintf(out, "%s [!] [-t] [-2] [-b] [-c <nnn>] [-d <nnnn>] [-s]\n",
+                 opt.argv0 );
+    fprintf(out, "%s --help\n",
+                 opt.argv0 );
+
+    return;
+}
+
 void
 prinhelp(void)
 {
@@ -60,9 +85,7 @@ prinhelp(void)
         out = stdout;
     }
     fprintf(out, "\n");
-    fprintf(out, "%s [!] [-t] [-b] [-d <nnnn>] [-h]\n", opt.argv0 );
-    fprintf(out, "\n");
-    fprintf(out, "    !         Ignore TERM env.\n");
+    fprintf(out, "  ACTIONS:\n");
     fprintf(out, "\n");
     fprintf(out, "    -t\n");
     fprintf(out, "    --term    Ask for terminal ident 'primary DA'\n");
@@ -77,30 +100,53 @@ prinhelp(void)
     fprintf(out, "    --color <nnn>\n");
     fprintf(out, "              Ask for the RGB of a color by number.\n");
     fprintf(out, "\n");
+    fprintf(out, "  OPTIONS:\n");
+    fprintf(out, "\n");
+    fprintf(out, "    !         Ignore TERM env, asks as if xterm.\n");
+    fprintf(out, "\n");
     fprintf(out, "    -d <nnnn>\n");
     fprintf(out, "    --delay <nnnn>\n");
     fprintf(out, "              Milliseconds to wait for first reply.\n");
     fprintf(out, "              default: 500 ( 0.5 seconds ).\n");
     fprintf(out, "\n");
+    fprintf(out, "    --var <name>\n");
+    fprintf(out, "              Variable name for shell readable output.\n");
+    fprintf(out, "              Only used for first output if multiple.\n");
+    fprintf(out, "\n");
     fprintf(out, "    -s\n");
     fprintf(out, "    --stats   Print stats info after read response.\n");
     fprintf(out, "\n");
+    fprintf(out, "    -v\n");
+    fprintf(out, "    --verbose Extra output.\n");
+    fprintf(out, "\n");
     fprintf(out, "    -h\n");
     fprintf(out, "    --help    This help.\n");
+    if ( opt.debug ) {
+        fprintf(out, "\n");
+        fprintf(out, "    -o </dev/tt...>\n");
+        fprintf(out, "    --tty   </dev/tt...>\n");
+        fprintf(out, "              Open this instead of current term.\n");
+        fprintf(out, "              Probably won't work.\n");
+    }
     if ( opt.wanthelp ) {
         fprintf(out, "\n");
-        fprintf(out, "env TERM='%s'\n", opt.envterm);
+        fprintf(out, "Effective TERM='%s'\n", opt.envterm);
     }
+
+    return;
 }
 
 int
-args( int argc, char *argv[], struct sopt* opt )
+args( int argc, char *argv[] )
 {
+    int action_requested = 0;
+
     /* Default all options */
-    memset( opt, 0, sizeof(struct sopt) );
-    opt->envterm = getenv("TERM");
-    opt->argv0   = argv[0];
-    opt->term    = ttyname(STDIN_FILENO);
+    struct sopt* memopt = &opt;
+    memset( memopt, 0, sizeof(struct sopt) );
+    opt.envterm = getenv("TERM");
+    opt.argv0   = argv[0];
+    opt.term    = ttyname(STDIN_FILENO);
 
     /* Walk the commandline */
     for ( int cx=1; cx < argc; cx++ ) {
@@ -112,11 +158,14 @@ args( int argc, char *argv[], struct sopt* opt )
                 && ( 0 == strcmp("--help", argv[cx]) ) )
             ) )
         {
-            opt->needhelp = 1;
-            opt->wanthelp = 1;
+            opt.wanthelp = 1;
+            action_requested++;
+            DEBUG("--help ACTION requested.\n", NULL);
         }
         else if ( 0 == strcmp("!", argv[cx] ) ) {
-            opt->ignoreterm = 1;
+            opt.ignoreterm = 1;
+            opt.envterm = "xterm";
+            DEBUG("! forcing TERM actions for [%s]\n", opt.envterm);
         }
         else if (
             (      ( ( strlen("-b") <= strlen(argv[cx]) )
@@ -129,7 +178,9 @@ args( int argc, char *argv[], struct sopt* opt )
                 && ( 0 == strcmp("--background", argv[cx]) ) )
             ) )
         {
-            opt->background = 1;
+            opt.background = 1;
+            action_requested++;
+            DEBUG("--bg ACTION requested.\n", NULL);
         }
         else if (
             (      ( ( strlen("-t") <= strlen(argv[cx]) )
@@ -139,7 +190,9 @@ args( int argc, char *argv[], struct sopt* opt )
                 && ( 0 == strcmp("--term", argv[cx]) ) )
             ) )
         {
-            opt->termname = 1;
+            opt.termname = 1;
+            action_requested++;
+            DEBUG("--term ACTION requested.\n", NULL);
         }
         else if (
             (      ( ( strlen("-2") <= strlen(argv[cx]) )
@@ -149,7 +202,9 @@ args( int argc, char *argv[], struct sopt* opt )
                 && ( 0 == strcmp("--term2", argv[cx]) ) )
             ) )
         {
-            opt->term2da = 1;
+            opt.term2da = 1;
+            action_requested++;
+            DEBUG("--term2 ACTION requested.\n", NULL);
         }
         else if (
             (      ( ( strlen("-s") <= strlen(argv[cx]) )
@@ -162,7 +217,8 @@ args( int argc, char *argv[], struct sopt* opt )
                 && ( 0 == strcmp("--stats", argv[cx]) ) )
             ) )
         {
-            opt->wantstat = 1;
+            opt.wantstat = 1;
+            DEBUG("--stats requested.\n", NULL);
         }
         else if (
             (      ( ( strlen("-c") <= strlen(argv[cx]) )
@@ -184,17 +240,19 @@ args( int argc, char *argv[], struct sopt* opt )
                     && ( endptr - argv[1 + cx] == strlen(argv[1+cx]) )  )
                 {
                     gc_ok = 1;
-                    opt->getcolor = 1;
-                    opt->color_num = getcolor;
+                    opt.getcolor = 1;
+                    opt.color_num = getcolor;
                     cx++;
+                    DEBUG("--color [%i] ACTION requested.\n", opt.color_num);
                 }
             }
             if ( ! gc_ok ) {
                 fprintf(stderr,
                     "Unable to read color num after option '%s'\n",
                     argv[cx]);
-                opt->needhelp = 1;
+                opt.needhelp = 1;
             }
+            action_requested++;
         }
         else if (
             (      ( ( strlen("-d") <= strlen(argv[cx]) )
@@ -216,9 +274,10 @@ args( int argc, char *argv[], struct sopt* opt )
                         fprintf(stderr,
                             "Not a valid delay '%s' for option '%s'\n",
                             argv[cx+1], argv[cx]);
-                        opt->needhelp = 1;
+                        opt.needhelp = 1;
                     } else {
-                        opt->delay = getdelay;
+                        opt.delay = getdelay;
+                        DEBUG("--delay [%li].\n", opt.delay);
                     }
                     cx++;
                     gd_ok = 1; /* Even if not, error already handled! */
@@ -228,7 +287,7 @@ args( int argc, char *argv[], struct sopt* opt )
                 fprintf(stderr,
                     "Unable to read delay after option '%s'\n",
                     argv[cx]);
-                opt->needhelp = 1;
+                opt.needhelp = 1;
             }
         }
         else if ( (
@@ -237,13 +296,25 @@ args( int argc, char *argv[], struct sopt* opt )
             ) )
         {
             if ( is_next( argc, cx ) ) {
-                opt->var = argv[++cx];
+                opt.var = argv[++cx];
+                DEBUG("--var OVERRIDE [%s].\n", opt.var);
             } else {
                 fprintf(stderr,
                     "Unable to read outvar after option '%s'\n",
                     argv[cx]);
-                opt->needhelp = 1;
+                opt.needhelp = 1;
             }
+        }
+        else if (
+            (      ( ( strlen("-v") <= strlen(argv[cx]) )
+                && ( 0 == strcmp("-v", argv[cx]) ) )
+            ) || (
+                   ( ( strlen("--ve") <= strlen(argv[cx]) )
+                && ( 0 == strncmp("--ve", argv[cx], strlen("--ve")) ) )
+            ) )
+        {
+            opt.debug = 1;
+            DEBUG("--verbose DEBUGGING ON.\n", NULL);
         }
         else if (
             (      ( ( strlen("-o") <= strlen(argv[cx]) )
@@ -255,46 +326,56 @@ args( int argc, char *argv[], struct sopt* opt )
         {
             if ( is_next( argc, cx ) ) {
                 cx++;
-                opt->term = argv[cx];
+                opt.term = argv[cx];
+                DEBUG("OPEN OVERRIDE [%s] (probably won't work).\n", opt.term);
             } else {
                 fprintf(stderr,
                     "Unable to read output term after option '%s'\n",
                     argv[cx]);
-                opt->needhelp = 1;
+                opt.needhelp = 1;
             }
         }
         else {
             fprintf( stderr, "Unknown option %d: [%s]\n", cx, argv[cx] );
+            opt.needhelp = 1;
         }
     }
-    if ( 1 < ( opt->termname + opt->background + opt->getcolor ) ) {
-        fprintf( stderr, "Only 1 query per command.\n" );
-        opt->needhelp = 1;
+    if ( NULL == opt.envterm )
+    {
+        opt.envterm = "xterm";
+        DEBUG("TERM empty, forcing actions for [%s]\n", opt.envterm);
     }
-    if ( NULL == opt->var ) {
-        if ( opt->termname ) {
-            opt->var = termname_var;
-        }
-        else if ( opt->term2da ) {
-            opt->var = term2da_var;
-        }
-        else if ( opt->background ) {
-            opt->var = background_var;
-        }
-        else if ( opt->getcolor ) {
-            opt->var = getcolor_var;
-        } else {
-            opt->var = default_var;
-        }
+    if ( opt.needhelp || opt.wanthelp ) {
+        // SIDE EFFECT -- NO DEBUG WARNING ABOUT --var BELOW.
+        action_requested = 1;
     }
     /* Set default delay */
-    if ( 0 == opt->delay ) {
-        opt->delay = 500;      /* ~ 500 milliseconds or 0.5 seconds */
+    if ( 0 == opt.delay ) {
+        opt.delay = 500;      /* ~ 500 milliseconds or 0.5 seconds */
+        DEBUG("--delay defaulting to [%li]\n", opt.delay);
     }
-    if (   ( NULL == opt->envterm )
-        || ( 1 == opt->ignoreterm ) )
+    /* Warn about no action */
+    if ( 0 == action_requested ) {
+        fprintf( stderr, "No ACTION requested.\n");
+        opt.needhelp = 1;
+    }
+    else if ( ( opt.debug )
+            && ( opt.var)
+            && ( 1 < action_requested )
+            )
     {
-        opt->envterm = "xterm";
+        if ( opt.termname ) {
+            DEBUG("--var [%s] will only be used for --term\n", opt.var );
+        }
+        else if ( opt.term2da ) {
+            DEBUG("--var [%s] will only be used for --term2\n", opt.var );
+        }
+        else if ( opt.getcolor ) {
+            DEBUG("--var [%s] will only be used for --color\n", opt.var );
+        }
+        else if ( opt.background ) {
+            DEBUG("--var [%s] will only be used for --bg %i\n", opt.color_num );
+        }
     }
     return 1;
 }
@@ -382,7 +463,13 @@ term_write()
 
     int ret = 0;
     if ( 1 == opt.termname ) {
-        if ( ( 4 == strlen( opt.envterm ) ) 
+        opt.termname = 0;
+        if ( NULL == opt.var ) {
+            opt.var = termname_var;
+            DEBUG("Set default --term var to %s\n", opt.var );
+        }
+
+        if ( ( 4 == strlen( opt.envterm ) )
             && (   ( 0 == strncmp( "vt5", opt.envterm, 3 )
                 || ( 0 == strncmp( "vt6", opt.envterm, 3 ) ) )
             ) )
@@ -391,12 +478,14 @@ term_write()
                 opt.envterm );
             exit(1);
         }
-        else if ( ( 2 <= strlen( opt.envterm ) ) 
+        else if ( ( 3 <= strlen( opt.envterm ) )
             && (
                  ( 0 == strncmp( "vt", opt.envterm, 2 ) )
               || ( 0 == strncmp( "xt", opt.envterm, 2 ) )
               || ( 0 == strncmp( "pu", opt.envterm, 2 ) )
               || ( 0 == strncmp( "co", opt.envterm, 2 ) )
+              || ( 0 == strncmp( "nst", opt.envterm, 3 ) )
+              || ( 0 == strncmp( "kon", opt.envterm, 3 ) )
             )   )
         {
             ret = fprintf(fh, xt_termreq );
@@ -408,14 +497,32 @@ term_write()
         fflush( fh );
     }
     else if ( 1 == opt.term2da ) {
+        opt.term2da = 0;
+        if ( NULL == opt.var ) {
+            opt.var = term2da_var;
+            DEBUG("Set default --term2 var to %s\n", opt.var );
+        }
+
         ret = fprintf(fh, xt_term2da);
         fflush( fh );
     }
     else if ( 1 == opt.getcolor ) {
+        opt.getcolor = 0;
+        if ( NULL == opt.var ) {
+            opt.var = getcolor_var;
+            DEBUG("Set default --color var to %s\n", opt.var );
+        }
+
         ret = fprintf(fh, xt_colorreq, opt.color_num);
         fflush( fh );
     }
     else if ( 1 == opt.background ) {
+        opt.background = 0;
+        if ( NULL == opt.var ) {
+            opt.var = background_var;
+            DEBUG("Set default --bg var to %s\n", opt.var );
+        }
+
         ret = fprintf(fh, xt_colorbg );
         fflush( fh );
     }
@@ -537,44 +644,67 @@ readInput( int bufsz, char * buf )
 }
 
 int
-main( int argc, char *argv[] )
+do_term()
 {
-    int bsz = 80;
+    int bsz = 1024;
     char *in;
     long int got = 0;
-
-    args( argc, argv, &opt );
 
     in = calloc( bsz, 1 );
     if ( NULL == in ) {
         exit ( 1 );
     }
-    if ( opt.needhelp ) {
+
+    while ( opt.termname + opt.background + opt.getcolor + opt.term2da ) {
+        term_write();
+
+        got = readInput(bsz, in);
+
+        term_cleanline();
+
+        if ( got ) {
+            printf( "%s='%s'; export %s; \n", opt.var, in, opt.var );
+        }
+        opt.var = NULL;
+
+        if ( opt.wantstat ) {
+            printf("#### STATS \n" );
+            printf("# length : %ld", got );
+            if ( got ) {
+                printf(", first_delay : %.3f s",
+                        ((float)opt.stat_d_first/2000) );
+            }
+            if ( opt.stat_d_inter ) {
+                printf(", longest interchar delay : %.3f s",
+                    ((float)opt.stat_d_inter/2000) );
+            }
+            printf("\n" );
+            if ( opt.debug ) {
+                printf("# tty : %s\n", opt.term );
+            }
+        }
+    }
+
+    return 0;
+}
+
+int
+main( int argc, char *argv[] )
+{
+    args( argc, argv );
+
+    if ( opt.wanthelp ) {
         prinhelp();
         exit( 0 );
     }
-
-    term_write();
-
-    got = readInput(bsz, in);
-
-    term_cleanline();
-
-    if ( got ) {
-        printf( "%s='%s'; export %s; \n", opt.var, in, opt.var );
+    if ( opt.needhelp ) {
+        prinusage();
+        exit( 1 );
     }
-    if ( opt.wantstat ) {
-        printf("#### STATS \n" );
-        printf("# length : %ld", got );
-        if ( got ) {
-            printf(", first_delay : %.3f s", ((float)opt.stat_d_first/2000) );
-        }
-        if ( opt.stat_d_inter ) {
-            printf(", longest interchar delay : %.3f s",
-                ((float)opt.stat_d_inter/2000) );
-        }
-        printf("\n" );
-        // printf("# tty : %s\n", opt.term );
-    }
+
+    do_term();
+
     fclose(opt.termfh);
+
+    exit(0);
 }
