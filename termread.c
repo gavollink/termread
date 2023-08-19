@@ -53,7 +53,7 @@ const char xt_colorbg[] = "\033]11;?\033\\";
 const char xt_colorreq[] = "\033]4;%d;?\007";
 const char xt_eraseline[] = "\033[9D\033[2K";
 
-#define DEBUG(str, __VA_ARGS__ ) if ( opt.debug ) \
+#define DEBUG(str, ... ) if ( opt.debug ) \
     { \
         char *b = calloc(1024, 1); \
         sprintf( b, "# DEBUG: %s", str );\
@@ -574,7 +574,6 @@ readInput( int bufsz, char * buf )
     opt.bufsz = bufsz;
     opt.buf = buf;
     char     c;
-    size_t   in_ln          = 0;
     size_t   bufln          = 0;
     int      first          = 0;
     long int wait_for_first = ( 2 * opt.delay );
@@ -588,7 +587,6 @@ readInput( int bufsz, char * buf )
     while (cur_wait > delay) {
         ret = read(0, &c, 1);
         if ( 1 == ret ) {
-            in_ln++;
             if ( 0 == first ) {
                 first = 1;
                 opt.stat_d_first = delay;
