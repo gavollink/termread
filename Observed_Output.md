@@ -14,7 +14,9 @@
 
 | Terminal | -t | -2 | -bg | -c1 | Version Info |
 |----------|----|----|-----|-----|--------------|
-| Terminal.app | `\033/1;2c` | `\033[>1;95;0c` | YES | YES | Catalina |
+| Terminal.app | `\033/1;2c` | `\033[>1;95;0c` | YES | YES | Catalina 10.x |
+| Terminal.app | `\033/1;2c` | `\033[>1;95;0c` | YES | YES | Big Sur 11.x |
+| Terminal.app | `\033/1;2c` | `\033[>1;95;0c` | YES | YES | Ventura 13.x |
 
 # Windows
 
