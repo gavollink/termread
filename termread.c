@@ -4,7 +4,14 @@
  * Linux/MacOS untility to query VT compatible terminals for basic
  *  identifiers and capabilities.
  *
+ * Internals of is_vtxx and is_vtxxx are from the
+ * helper program generate_u9_matches.pl
+ *
+ * https://www.vt100.net/docs/vt100-ug/chapter3.html
+ * https://vt100.net/docs/vt220-rm/chapter4.html
+ *
  * LICENSE: Embedded at bottom...
+ *
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,7 +22,7 @@
 #include <errno.h>
 #include <time.h>
 
-const char VERSION[] = "1.09";
+const char VERSION[] = "1.10";
 
 int term_cleanline();
 int is_next( int argc, int cx );
@@ -58,7 +65,20 @@ char default_var[] = "OUT";
 
 const char vt_termreq[] = "\033Z";
 const char vt_eraseline[] = "\033\015\033K";
+// The xt_termreq sequence is based on Primary DA (name from
+// vt220 manual).  However, this sequence includes a cheat-code.
+// PuTTY responds to "\005" with "PuTTY", so by putting out both,
+// PuTTY responsds with both outputs like so: '\033[?6cPuTTY'
+// THIS IS NOT FOOLPROOF since, well, the setting is configurable
+// by the user per connection (Under Terminal settings).
 const char xt_termreq[] = "\033[c\005";
+// This sequence is copied from the vt220 manual
+//  where it is referred to as `Secondary DA`
+// and is only supported by vt220 descendencts.
+// Bascially, if a terminal doesn't respond to "xt_termreq"
+// it won't respond to this.
+// Note that many modern vt100 descendence (including xterm)
+// respond to this anyway.
 const char xt_term2da[] = "\033[>c";
 const char xt_colorbg[] = "\033]11;?\033\\";
 const char xt_colorreq[] = "\033]4;%d;?\007";
@@ -99,6 +119,440 @@ prinusage(void)
     fprintf(out, "\n");
 
     return;
+}
+
+int
+sncmp( const char * a, const char * b, long int len )
+{
+    int match = 0;
+    for ( long int cx = 0; cx < len; cx++ ) {
+        if ( ( 0 == a[cx] ) && ( 0 == b[cx] ) ) {
+            return( match );
+        }
+        else if ( 0 == a[cx] ) {
+            match--;
+            return( match );
+        }
+        else if ( 0 == b[cx] ) {
+            match++;
+            return( match );
+        }
+        match += ( a[cx] - b[cx] );
+        if ( match ) {
+            return( match );
+        }
+    }
+    return match;
+}
+
+int is_matchlist ( const char * term, const char ** match )
+{
+    char *xbuf;
+    xbuf = calloc( 1024, 1 );
+    for ( int cx = 0; 1; cx++ ) {
+        if ( 0 == match[cx][0] ) {
+            free( xbuf );
+            return ( 1 );
+        }
+        if ( 0 == sncmp( match[cx], term, strlen( match[cx] ) + 1 ) ) {
+            free( xbuf );
+            return (0);
+        }
+        sprintf( xbuf, "%s-", match[cx] );
+        if ( 0 == sncmp( xbuf, term, strlen( xbuf ) ) ) {
+            free( xbuf );
+            return (0);
+        }
+        sprintf( xbuf, "%s+", match[cx] );
+        if ( 0 == sncmp( xbuf, term, strlen( xbuf ) ) ) {
+            free( xbuf );
+            return (0);
+        }
+    }
+    free( xbuf );
+    return ( -1 );
+}
+
+int is_vtxx ( const char * term )
+{
+    /*******
+     *   SELF ID ( user9 ) |\EZ| term list
+     */
+    const char *term_list[] = {
+        "hz1552",
+        "hz1552-rv",
+        "linux+decid",
+        "linux-m1",
+        "linux-m1b",
+        "linux-m2",
+        "putty-m1",
+        "putty-m1b",
+        "putty-m2",
+        "screen.linux-m1",
+        "screen.linux-m1b",
+        "screen.linux-m2",
+        "screen.minitel1",
+        "screen.minitel1-nb",
+        "screen.minitel12-80",
+        "screen.minitel1b",
+        "screen.minitel1b-80",
+        "screen.minitel1b-nb",
+        "screen.minitel2-80",
+        "screen.putty-m1",
+        "screen.putty-m1b",
+        "screen.putty-m2",
+        "vt50",
+        "vt50h",
+        "vt52",
+        // Not in termcap, but exists
+        "vt52b",
+        "vt55",
+        "vt62",
+        "\000"
+    };
+    return is_matchlist( term, term_list );
+}
+
+int is_vtxxx ( const char * term )
+{
+    /*******
+     *   SELF ID ( user9 ) |\E[c| term list
+     */
+    const char *term_list[] = {
+        "Apple_Terminal",
+        "Eterm",
+        "Eterm-256color",
+        "Eterm-88color",
+        "Eterm-color",
+        "absolute",
+        "alacritty",
+        "alacritty+common",
+        "alacritty-direct",
+        "ansi",
+        "ansi+enq",
+        "ansi-color-2-emx",
+        "ansi-color-3-emx",
+        "ansi-emx",
+        "aterm",
+        "cit101e-rv",
+        "crt",
+        "crt-vt220",
+        "cygwin",
+        "cygwinDBG",
+        "dec-vt220",
+        "domterm",
+        "foot+base",
+        "gnome",
+        "gnome-2007",
+        "gnome-2008",
+        "gnome-2012",
+        "gnome-256color",
+        "gnome-fc5",
+        "gnome-rh62",
+        "gnome-rh72",
+        "gnome-rh80",
+        "gnome-rh90",
+        "hterm",
+        "hterm-256color",
+        "iTerm.app",
+        "iTerm2.app",
+        "iris-color",
+        "iterm",
+        "iterm2",
+        "iterm2-direct",
+        "jfbterm",
+        "kitty",
+        "kitty+common",
+        "kitty-direct",
+        "kon",
+        "kon2",
+        "konsole",
+        "konsole-16color",
+        "konsole-256color",
+        "konsole-base",
+        "konsole-direct",
+        "konsole-linux",
+        "konsole-solaris",
+        "konsole-vt100",
+        "konsole-vt420pc",
+        "konsole-xf3x",
+        "konsole-xf4x",
+        "kterm",
+        "kterm-co",
+        "kterm-color",
+        "kvt",
+        "linux",
+        "linux-16color",
+        "linux-basic",
+        "linux-c",
+        "linux-c-nc",
+        "linux-koi8",
+        "linux-koi8r",
+        "linux-lat",
+        "linux-m",
+        "linux-nic",
+        "linux-s",
+        "linux-vt",
+        "linux2.2",
+        "linux2.6",
+        "linux2.6.26",
+        "linux3.0",
+        "mgt",
+        "mintty",
+        "mintty+common",
+        "mintty-direct",
+        "mlterm",
+        "mlterm-256color",
+        "mlterm-direct",
+        "mlterm2",
+        "mlterm3",
+        "mrxvt",
+        "mrxvt-256color",
+        "ms-terminal",
+        "ms-vt-utf8",
+        "ms-vt100",
+        "ms-vt100+",
+        "ms-vt100-color",
+        "ncsa",
+        "ncsa-m",
+        "ncsa-m-ns",
+        "ncsa-ns",
+        "ncsa-vt220",
+        "ncsa-vt220-8",
+        "netbsd6",
+        "nsterm",
+        "nsterm+7",
+        "nsterm+acs",
+        "nsterm+mac",
+        "nsterm-16color",
+        "nsterm-256color",
+        "nsterm-7",
+        "nsterm-7-c",
+        "nsterm-7-c-s",
+        "nsterm-7-m",
+        "nsterm-7-m-s",
+        "nsterm-7-s",
+        "nsterm-acs",
+        "nsterm-acs-c",
+        "nsterm-acs-c-s",
+        "nsterm-acs-m",
+        "nsterm-acs-m-s",
+        "nsterm-acs-s",
+        "nsterm-bce",
+        "nsterm-build309",
+        "nsterm-build326",
+        "nsterm-build343",
+        "nsterm-build361",
+        "nsterm-build400",
+        "nsterm-c",
+        "nsterm-c-7",
+        "nsterm-c-acs",
+        "nsterm-c-s",
+        "nsterm-c-s-7",
+        "nsterm-c-s-acs",
+        "nsterm-direct",
+        "nsterm-m",
+        "nsterm-m-7",
+        "nsterm-m-acs",
+        "nsterm-m-s",
+        "nsterm-m-s-7",
+        "nsterm-m-s-acs",
+        "nsterm-old",
+        "nsterm-s",
+        "nsterm-s-7",
+        "nsterm-s-acs",
+        "nwp-517",
+        "nwp-517-w",
+        "nwp517",
+        "nwp517-w",
+        "nxterm",
+        "pccon",
+        "pccon-m",
+        "putty",
+        "putty-256color",
+        "putty-noapp",
+        "putty-sco",
+        "putty-screen",
+        "putty-vt100",
+        "rxvt-unicode",
+        "rxvt-unicode-256color",
+        "screen",
+        "screen-16color",
+        "screen-16color-bce",
+        "screen-16color-bce-s",
+        "screen-16color-s",
+        "screen-256color",
+        "screen-256color-bce",
+        "screen-256color-bce-s",
+        "screen-256color-s",
+        "screen-bce",
+        "screen-bce.Eterm",
+        "screen-bce.gnome",
+        "screen-bce.konsole",
+        "screen-bce.linux",
+        "screen-bce.mrxvt",
+        "screen-bce.rxvt",
+        "screen-bce.xterm-new",
+        "screen-s",
+        "screen-w",
+        "screen.Eterm",
+        "screen.gnome",
+        "screen.konsole",
+        "screen.konsole-256color",
+        "screen.linux",
+        "screen.linux-s",
+        "screen.mlterm",
+        "screen.mlterm-256color",
+        "screen.mrxvt",
+        "screen.nsterm",
+        "screen.putty",
+        "screen.putty-256color",
+        "screen.rxvt",
+        "screen.teraterm",
+        "screen.vte",
+        "screen.vte-256color",
+        "screen.xterm-256color",
+        "screen.xterm-new",
+        "screen.xterm-r6",
+        "screen.xterm-xfree86",
+        "screen4",
+        "screen5",
+        "scrt",
+        "securecrt",
+        "st",
+        "st-0.6",
+        "st-0.7",
+        "st-0.8",
+        "st-16color",
+        "st-256color",
+        "st-direct",
+        "stterm",
+        "stterm-16color",
+        "stterm-256color",
+        "teken",
+        "teraterm",
+        "teraterm-256color",
+        "teraterm2.3",
+        "teraterm4.59",
+        "teraterm4.97",
+        "terminology",
+        "terminology-1.8.1",
+        "termite",
+        "ti916",
+        "ti916-132",
+        "ti916-220-7",
+        "ti916-220-8",
+        "ti916-8",
+        "ti916-8-132",
+        "tmux",
+        "tmux-256color",
+        "tmux-direct",
+        "uniterm",
+        "uniterm49",
+        "v200-nam",
+        "v320n",
+        "vs100",
+        "vscode",
+        "vscode-direct",
+        "vt-utf8",
+        "vt100+",
+        "vt100+enq",
+        "vt102+enq",
+        "vt200",
+        "vt200-w",
+        "vt220",
+        "vt220-base",
+        "vt220-nam",
+        "vt220-w",
+        "vt300",
+        "vt300-nam",
+        "vt300-w",
+        "vt300-w-nam",
+        "vt320",
+        "vt320-nam",
+        "vt320-w",
+        "vt320-w-nam",
+        "vt320nam",
+        "vt420",
+        "vt420f",
+        "vt420pc",
+        "vt420pcdos",
+        "vt510",
+        "vt510pc",
+        "vt510pcdos",
+        "vt520",
+        "vt520ansi",
+        "vt525",
+        "vte",
+        "vte-2007",
+        "vte-2008",
+        "vte-2012",
+        "vte-2014",
+        "vte-2017",
+        "vte-2018",
+        "vte-256color",
+        "vte-direct",
+        "vtnt",
+        "wsvt25",
+        "wsvt25m",
+        "x68k",
+        "x68k-ite",
+        "xfce",
+        "xiterm",
+        "xterm",
+        "xterm+nofkeys",
+        "xterm-1002",
+        "xterm-1003",
+        "xterm-1005",
+        "xterm-1006",
+        "xterm-16color",
+        "xterm-24",
+        "xterm-256color",
+        "xterm-88color",
+        "xterm-8bit",
+        "xterm-basic",
+        "xterm-bold",
+        "xterm-color",
+        "xterm-debian",
+        "xterm-direct",
+        "xterm-direct16",
+        "xterm-direct2",
+        "xterm-direct256",
+        "xterm-hp",
+        "xterm-kitty",
+        "xterm-mono",
+        "xterm-new",
+        "xterm-nic",
+        "xterm-noapp",
+        "xterm-old",
+        "xterm-pcolor",
+        "xterm-r5",
+        "xterm-r6",
+        "xterm-sco",
+        "xterm-sun",
+        "xterm-utf8",
+        "xterm-vt220",
+        "xterm-x10mouse",
+        "xterm-x11hilite",
+        "xterm-x11mouse",
+        "xterm-xf86-v32",
+        "xterm-xf86-v33",
+        "xterm-xf86-v333",
+        "xterm-xf86-v40",
+        "xterm-xf86-v43",
+        "xterm-xf86-v44",
+        "xterm-xfree86",
+        "xterm-xi",
+        "xterm.js",
+        "xterm1",
+        "xterms",
+        "xterms-sun",
+        "xwsh",
+        "z340",
+        "z340-nam",
+        "\000"
+    };
+    return is_matchlist( term, term_list );
 }
 
 void
@@ -368,7 +822,7 @@ args( int argc, char *argv[] )
             ) || (
                    ( strlen("--li") <= strlen(argv[cx]) )
                 && ( strlen("--license") >= strlen(argv[cx]) )
-                && ( 0 == strncmp("--license", argv[cx], strlen(argv[cx]) ) )
+                && ( 0 == sncmp("--license", argv[cx], strlen(argv[cx]) ) )
             )   )
         {
             opt.wantlicense = 1;
@@ -381,7 +835,7 @@ args( int argc, char *argv[] )
             ) || (
                    ( strlen("--vers") <= strlen(argv[cx]) )
                 && ( strlen("--version") >= strlen(argv[cx]) )
-                && ( 0 == strncmp("--version", argv[cx], strlen(argv[cx]) ) )
+                && ( 0 == sncmp("--version", argv[cx], strlen(argv[cx]) ) )
             ) )
         {
             opt.wantversion = 1;
@@ -394,7 +848,7 @@ args( int argc, char *argv[] )
             ) || (
                    ( strlen("--verb") <= strlen(argv[cx]) )
                 && ( strlen("--verbose") >= strlen(argv[cx]) )
-                && ( 0 == strncmp("--verbose", argv[cx], strlen(argv[cx]) ) )
+                && ( 0 == sncmp("--verbose", argv[cx], strlen(argv[cx]) ) )
             ) )
         {
             opt.debug = 1;
@@ -534,13 +988,7 @@ term_cleanline()
     }
 
     int ret = 0;
-    if ( ( 4 == strlen( opt.envterm ) )
-        && (   ( 0 == strncmp( "vt50", opt.envterm, 4 ) )
-            || ( 0 == strncmp( "vt52", opt.envterm, 4 ) )
-            || ( 0 == strncmp( "vt55", opt.envterm, 4 ) )
-            || ( 0 == strncmp( "vt62", opt.envterm, 4 ) )
-        )   )
-    {
+    if ( 0 == is_vtxx( opt.envterm ) ) {
         ret = fprintf(fh, vt_eraseline );
     } else {
         ret = fprintf(fh, xt_eraseline );
@@ -567,29 +1015,15 @@ term_write()
             DEBUG("Set default --term var to %s\n", opt.var );
         }
 
-        if ( ( 4 == strlen( opt.envterm ) )
-            && (   ( 0 == strncmp( "vt50", opt.envterm, 4 ) )
-                || ( 0 == strncmp( "vt52", opt.envterm, 4 ) )
-                || ( 0 == strncmp( "vt55", opt.envterm, 4 ) )
-                || ( 0 == strncmp( "vt62", opt.envterm, 4 ) )
-           )   )
-        {
+        if ( 0 == is_vtxx( opt.envterm ) ) {
             // THIS IS VERY RARE, WILL PROBABLY NEVER BE USED...
             ret = fprintf(fh, vt_termreq );
         }
-        else if ( ( 3 <= strlen( opt.envterm ) )
-            && (
-                 ( 0 == strncmp( "vt", opt.envterm, 2 ) )
-              || ( 0 == strncmp( "xt", opt.envterm, 2 ) )
-              || ( 0 == strncmp( "pu", opt.envterm, 2 ) )
-              || ( 0 == strncmp( "co", opt.envterm, 2 ) )
-              || ( 0 == strncmp( "nst", opt.envterm, 3 ) )
-              || ( 0 == strncmp( "kon", opt.envterm, 3 ) )
-            )   )
-        {
+        else if ( 0 == is_vtxxx( opt.envterm ) ) {
             ret = fprintf(fh, xt_termreq );
         } else {
-            fprintf( stderr, "TERM env is '%s' (-t not supported)\n",
+            fprintf( stderr,
+                "# Current effective TERM='%s', does not support --term\n",
                 opt.envterm );
             exit(1);
         }
@@ -602,19 +1036,17 @@ term_write()
             DEBUG("Set default --term2 var to %s\n", opt.var );
         }
 
-        if ( ( 4 == strlen( opt.envterm ) )
-            && (   ( 0 == strncmp( "vt50", opt.envterm, 4 ) )
-                || ( 0 == strncmp( "vt52", opt.envterm, 4 ) )
-                || ( 0 == strncmp( "vt55", opt.envterm, 4 ) )
-                || ( 0 == strncmp( "vt62", opt.envterm, 4 ) )
-           )   )
-        {
-            fprintf( stderr,
-                    "# Current effective TERM='%s', does not support --term2\n",
-                    opt.envterm);
-        } else {
+        if ( 0 == is_vtxxx( opt.envterm ) ) {
             ret = fprintf(fh, xt_term2da);
             fflush( fh );
+        } else {
+            fprintf( stderr,
+                "# Current effective TERM='%s', does not support --term2\n",
+                 opt.envterm);
+            if ( 0 == is_vtxx( opt.envterm ) ) {
+                fprintf( stderr, "# This term in a descendent of vt50, but 'Secondary DA'\n" );
+                fprintf( stderr, "# is a feature of 'vt220', 'xterm' and descendents.\n" );
+            }
         }
     }
     else if ( 1 == opt.getcolor ) {
@@ -624,19 +1056,17 @@ term_write()
             DEBUG("Set default --color var to %s\n", opt.var );
         }
 
-        if ( ( 4 == strlen( opt.envterm ) )
-            && (   ( 0 == strncmp( "vt50", opt.envterm, 4 ) )
-                || ( 0 == strncmp( "vt52", opt.envterm, 4 ) )
-                || ( 0 == strncmp( "vt55", opt.envterm, 4 ) )
-                || ( 0 == strncmp( "vt62", opt.envterm, 4 ) )
-           )   )
-        {
-            fprintf( stderr,
-                    "# Current effective TERM='%s', does not support --color\n",
-                    opt.envterm);
-        } else {
+        if ( 0 == is_vtxxx( opt.envterm ) ) {
             ret = fprintf(fh, xt_colorreq, opt.color_num);
             fflush( fh );
+        } else {
+            fprintf( stderr,
+                "# Current effective TERM='%s', does not support --color\n",
+                opt.envterm);
+            if ( 0 == is_vtxx( opt.envterm ) ) {
+                fprintf( stderr, "# This term in a descendent of vt50, but color\n" );
+                fprintf( stderr, "# is a feature of 'vt220' descendents.\n" );
+            }
         }
     }
     else if ( 1 == opt.background ) {
@@ -646,29 +1076,21 @@ term_write()
             DEBUG("Set default --bg var to %s\n", opt.var );
         }
 
-        if ( ( 4 == strlen( opt.envterm ) )
-            && (   ( 0 == strncmp( "vt50", opt.envterm, 4 ) )
-                || ( 0 == strncmp( "vt52", opt.envterm, 4 ) )
-                || ( 0 == strncmp( "vt55", opt.envterm, 4 ) )
-                || ( 0 == strncmp( "vt62", opt.envterm, 4 ) )
-           )   )
-        {
-            fprintf( stderr,
-                    "# Current effective TERM='%s', does not support --bg\n",
-                    opt.envterm);
-        } else {
+        if ( 0 == is_vtxxx( opt.envterm ) ) {
             ret = fprintf(fh, xt_colorbg );
             fflush( fh );
+        } else {
+            fprintf( stderr,
+                "# Current effective TERM='%s', does not support --color\n",
+                opt.envterm);
+            if ( 0 == is_vtxx( opt.envterm ) ) {
+                fprintf( stderr, "# This term in a descendent of vt50, but color\n" );
+                fprintf( stderr, "# is a feature of 'vt220' descendents.\n" );
+            }
         }
     }
     else {
-        if ( ( 4 == strlen( opt.envterm ) )
-            && (   ( 0 == strncmp( "vt50", opt.envterm, 4 ) )
-                || ( 0 == strncmp( "vt52", opt.envterm, 4 ) )
-                || ( 0 == strncmp( "vt55", opt.envterm, 4 ) )
-                || ( 0 == strncmp( "vt62", opt.envterm, 4 ) )
-            )   )
-        {
+        if ( 0 == is_vtxx( opt.envterm ) ) {
             ret = fprintf(fh, vt_eraseline );
         } else {
             ret = fprintf(fh, xt_eraseline );
@@ -873,22 +1295,23 @@ MIT License\n\
 TermRead v %s https://gitlab.home.vollink.com/external/termread/\n\
 Copyright (c) 2023, Gary Allen Vollink\n\
 \n\
-Permission is hereby granted, free of charge, to any person obtaining a copy\n\
-of this software and associated documentation files (the \"Software\"), to deal\n\
-in the Software without restriction, including without limitation the rights\n\
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n\
-copies of the Software, and to permit persons to whom the Software is\n\
-furnished to do so, subject to the following conditions:\n\
+Permission is hereby granted, free of charge, to any person obtaining\n\
+a copy of this software and associated documentation files\n\
+(the \"Software\"), to deal in the Software without restriction,\n\
+including without limitation the rights to use, copy, modify, merge,\n\
+publish, distribute, sublicense, and/or sell copies of the Software,\n\
+and to permit persons to whom the Software is furnished to do so,\n\
+subject to the following conditions:\n\
 \n\
-The above copyright notice and this permission notice shall be included in all\n\
-copies or substantial portions of the Software.\n\
+The above copyright notice and this permission notice shall be\n\
+included in all copies or substantial portions of the Software.\n\
 \n\
-THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n\
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n\
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n\
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n\
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n\
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n\
-SOFTWARE.\n\n", VERSION);
+THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\n\
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\n\
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.\n\
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY\n\
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,\n\
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE\n\
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n\n", VERSION);
 }
 /* EOF termread.c */
