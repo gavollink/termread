@@ -9,7 +9,7 @@
 | xvt     | `\033[?6c` | `\033[?6c` | nil | nil | 2.1-20.3ubuntu2 |
 | xterm   | `\033[?64;1;2;6;9;15;18;21;22c` | `\033[>41;353;0c` | YES | YES | XTerm(353) |
 | console | `\033[?6c` | nil | ? | ? | Ubuntu 20.02  |
-| xterm -ti vt52  | `\033/Z` | nil | YES | YES | XTerm(353) VT52 Emulation |
+| xterm -ti vt52  | `\033/Z` | NO | NO | NO | XTerm(372) VT52 Emulation |
 
 # macOS
 
