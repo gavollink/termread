@@ -9,6 +9,7 @@
 | xvt     | `\033[?6c` | `\033[?6c` | nil | nil | 2.1-20.3ubuntu2 |
 | xterm   | `\033[?64;1;2;6;9;15;18;21;22c` | `\033[>41;353;0c` | YES | YES | XTerm(353) |
 | console | `\033[?6c` | nil | ? | ? | Ubuntu 20.02  |
+| xterm -ti vt52  | `\033/Z` | nil | YES | YES | XTerm(353) VT52 Emulation |
 
 # macOS
 
@@ -30,3 +31,13 @@ of capabilities.
 | Win10 cmd        | `\033[?1c` | `\033[>0;10;1c` | nil | nil | Win 10 or 11 |
 | Windows Terminal | `\033[?1c` | `\033[>0;10;1c` | nil | nil | 1.11.2921.0 |
 | PuTTY      | `\033[?6cPuTTY` | `\033[>0;136;0c` | nil | nil | 0.70 |
+
+# Not-Observed But Expected Outputs
+
+| Terminal | -t | -2 | -bg | -c1 | Version Info | NOTES |
+|----------|----|----|-----|-----|--------------|-------|
+| vt50     | `\033A` | nil | nil | nil | DECscope VT50 Ax (or Cx) | Displays Uppercase Only, 12 Lines x 80 Cols |
+| vt50h    | `\033H` | nil | nil | nil | DECscope VT50 Hx | Displays Uppercase Only, 12 Lines x 80 Cols |
+| vt50j    | `\033J` | nil | nil | nil | DECscope vt50 Jx (with copier) | Displays Uppercase Only, 12 Lines x C80 ols |
+| vt52     | `\033K` | nil | nil | nil | DECscope vt52 Ax (or Cx) | 24 Lines x 80 Cols |
+| vt52b    | `\033L` | nil | nil | nil | DECscope vt52 Bx (with copier) | 24 Lines x 80 Cols |
