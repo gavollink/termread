@@ -11,6 +11,9 @@
 | console | `\033[?6c` | nil | ? | ? | Ubuntu 20.02  |
 | xterm -ti vt52  | `\033/Z` | NO | NO | NO | XTerm(372) VT52 Emulation |
 
+NOTE: xterm in vt52 mode responds with the string of a vt05 which must have
+been a mistake.
+
 # macOS
 
 | Terminal | -t | -2 | -bg | -c1 | Version Info |
@@ -33,6 +36,8 @@ of capabilities.
 | PuTTY      | `\033[?6cPuTTY` | `\033[>0;136;0c` | nil | nil | 0.70 |
 
 # Not-Observed But Expected Outputs
+
+vt50/52 outputs from https://vt100.net/dec/ek-vt5x-op-001.pdf (page 22).
 
 | Terminal | -t | -2 | -bg | -c1 | Version Info | NOTES |
 |----------|----|----|-----|-----|--------------|-------|
