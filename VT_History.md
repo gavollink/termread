@@ -2,7 +2,7 @@
 
 # Before Screen-based Serial Terminals
 
-Computer output used to be sent into a computer directly to a typewriter 
+Computer output used to be sent into a computer directly to a typewriter
 that was hooked up to press keys on specific output signals.
 This meant using paper for any output.  These, so called, TeleType
 machines (TTY) eventually became capable of being input devices as well.
@@ -41,12 +41,12 @@ to display a font of characters onto the CRT, just like a TTY,
 without a computer having to explain where each "dot" of a character
 needs to be individually drawn.
 
-It also needs to be able to scroll lines up the screen as new input 
+It also needs to be able to scroll lines up the screen as new input
 is received.  This means that these terminals needed some memory to
 be able to redraw the information that was on the rest of the screen.
 
 Despite the great start of creating the concept of using a
-screen with a computer, DEC was not the first company 
+screen with a computer, DEC was not the first company
 to create a CRT based serial terminal.  The earliest I've been able
 to find is 1969's Datapoint 3300, by Computer Terminal Corporation.
 
@@ -58,13 +58,15 @@ This terminal was capable of displaying 20 lines of 72 columns, or 1442
 characters.
 
 While dumb, there was one major innovation that this terminal brought
-about, the concept of _CAD_ (The Direct Cursor Address Code).
+about, the concept of *CAD* (The Direct Cursor Address Code).
 This used character `14` to put the terminal into a 'move the cursor'
 mode.  So, unlike a typewriter, it was possible to change an
 area in the middle of the screen without retyping the entire screen.
 
-I noted that ASCII was still in flux during this time, so here are some
-outstanding characters that I found that have non-ASCII meanings.
+The manual for the VT05 says in complies with
+`U.S. ASCII X3.15-1966`, which is a VERY early version
+of ASCII as it was still in flux during this time, so here are some
+outstanding characters this terminal uses that have non-ASCII meanings.
 
 | Char | Action |
 |---|---|
@@ -86,7 +88,7 @@ padding which was common across all serial terminals at the time.
 
 ## VT50 Series, Introducing ESC codes
 
-Introduced late in 1975, VT50, 52, 55 and 62 terminals were the first 
+Introduced late in 1975, VT50, 52, 55 and 62 terminals were the first
 to interpret the ESC ( `\033` ) as the start of instructions to be
 interpreted by the terminal instead of displayed directly to the user.
 It is my belief that this innovation is why DEC terminal codes
@@ -94,14 +96,22 @@ have been supported in non-serial applications from DOS 2.0
 (ansi.sys) up through modern graphical systems,
 like Terminal.app in macOS.
 
-This line also introduced the idea of sending data back to the computer 
+This line also introduced the idea of sending data back to the computer
 that didn't come from user input.  This came in the form of the
-DECID command ( `\033Z` ) which would respond with ( `\033/Z` ).
+DECID command ( `\033Z` ) which would respond with a terminal identifier,
+see table:
 
 | Action | Code | Definition |
 |----|----|----|
 | Send    | `\033Z`  | DECID sequence |
-| Recieve | `\033/Z` | VT52 response |
+| Recieve | `\033/A` | VT50 response |
+| Recieve | `\033/H` | VT50H response |
+| Recieve | `\033/J` | VT50H w/ Copier response |
+| Recieve | `\033/K` | VT52 response |
+| Recieve | `\033/L` | VT52 w/ Copier response |
+| Recieve | `\033/C` | VT55 response (s1) |
+| Recieve | `\033/E` | VT55E and later response (s2) |
+| Recieve | `\033/Z` | xterm in VT52 emulation mode |
 
 The VT50 did not support lowercase characters, the backtick (\`),
 the braces ({/}), or the pipe (|), while the VT52 and later did.
@@ -110,17 +120,70 @@ That makes the VT52 the earliest 'modern' terminal.  Software written
 for this terminal would have little issue talking with a modern
 `xterm`, `Microsoft Terminal` or `Terminal.app`.
 
-That said, its capabilities were very small in relation to the 
+That said, its capabilities were very small in relation to the
 expectations of a modern user.
+
+NOTE: This table comes from
+(s1) https://vt100.net/dec/ek-vt5x-op-001.pdf page 22, and
+(s2) https://vt100.net/dec/ek-vt55e-tm-001.pdf page 5-19.
+
+The program xterm, under vt52 emulation, responds with `\033/Z`
+which is not "technically" correct, but there is a lot of places
+online  where that response is claimed as the actual response for
+a vt52 terminal, since neither of the Digital manuals agree, I'm
+confident in what I've written here.  THAT SAID, it is *possible*
+that later DEC terminal models running in vt52 compatability mode
+did respond to `DECID` with `\033/Z`.
 
 ## VT100 series
 
-August 1978, the VT100 was brought to market.  This series proved to be 
+August 1978, the VT100 was brought to market.  This series proved to be
 very successful and created a HUGE number of clones, making the VT100 the
 most emulated terminal in the world.  On any modern system, the capabilities
 of a VT100 are taken for granted.
 
-Note the VT101 and VT102 are reduced feature versions of the VT100.
+The DECID command is still supported, but is deprecated in favor of
+the `Device Attributes` (DA) command: `\033[c`.
+
+Don't be fooled by the higher numbers,
+the VT101 and VT102 are reduced feature versions of the VT100.
+
+A VT100 series terminal's DA response starts with `\033[?1;` and
+ends with `c`.
+
+## VT200 series
+
+Starting with the VT 220, the `Secondary Device Attributes` or `Secondary DA`
+command was introduced: `\033[>c`
+
+This has been embraced by most emulators (even ones that only claim vt100
+capabilites).  With the advent of `Secondary DA` the original `DA` is 
+referred to as `Primary DA`.
+
+A VT200 series terminal's DA response starts with `\033[?62;` and
+ends with `c`.
+
+## DEC Terminal Primary DA responses...
+
+| Series | Starts      |
+|--------|-------------|
+| vt100  | `\033[?1;`  |
+| vt200  | `\033[?62;` |
+| vt300  | `\033[?63;` |
+| vt400  | `\033[?64;` |
+| vt500  | `\033[?65;` |
+
+From vt100 and higher, the DECID string is deprecated, but still present.
+From vt200 and higher, the DECID string ONLY responds if the hard
+terminal is running in VT52 or VT100 emulation modes.
+
+## Primary DA and other terminals
+
+Many other terminal types eventually picked up the general feature of
+identifying themselves if a certain string is sent, though not all
+respond to the DEC `Primary DA` string.  This idea of being able to identify
+a terminal by literally asking it became popular enough that the `user9`
+or `u9` string in curses is used to store this value.
 
 # Sources
 
