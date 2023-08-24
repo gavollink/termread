@@ -33,7 +33,7 @@ of capabilities.
 |----------|----|----|-----|-----|--------------|
 | Win10 cmd        | `\033[?1c` | `\033[>0;10;1c` | nil | nil | Win 10 or 11 |
 | Windows Terminal | `\033[?1c` | `\033[>0;10;1c` | nil | nil | 1.11.2921.0 |
-| PuTTY      | `\033[?6cPuTTY` | `\033[>0;136;0c` | nil | nil | 0.70 |
+| PuTTY      | `\033[?6cPuTTY` | `\033[>0;136;0c` | nil | nil | 0.70 -> 0.76 |
 
 # Not-Observed But Expected Outputs
 
@@ -46,3 +46,4 @@ vt50/52 outputs from https://vt100.net/dec/ek-vt5x-op-001.pdf (page 22).
 | vt50j    | `\033J` | nil | nil | nil | DECscope vt50 Jx (with copier) | Displays Uppercase Only, 12 Lines x C80 ols |
 | vt52     | `\033K` | nil | nil | nil | DECscope vt52 Ax (or Cx) | 24 Lines x 80 Cols |
 | vt52b    | `\033L` | nil | nil | nil | DECscope vt52 Bx (with copier) | 24 Lines x 80 Cols |
+| vt55     | `\033E` | nil | nil | nil | DECscope vt55 | 24 Lines x 80 Cols |
