@@ -22,7 +22,7 @@
 #include <errno.h>
 #include <time.h>
 
-const char VERSION[] = "1.10";
+const char VERSION[] = "1.11";
 
 int term_cleanline();
 int is_next( int argc, int cx );
@@ -154,10 +154,15 @@ int is_matchlist ( const char * term, const char ** match )
             free( xbuf );
             return ( 1 );
         }
+        /* Explicit request to match up to and including end-nulls */
         if ( 0 == sncmp( match[cx], term, strlen( match[cx] ) + 1 ) ) {
             free( xbuf );
             return (0);
         }
+    /*  ****************************************
+        * THESE are removed since the lists now come from a helper
+        * program.
+        **** -->
         sprintf( xbuf, "%s-", match[cx] );
         if ( 0 == sncmp( xbuf, term, strlen( xbuf ) ) ) {
             free( xbuf );
@@ -168,6 +173,7 @@ int is_matchlist ( const char * term, const char ** match )
             free( xbuf );
             return (0);
         }
+        ****************************************  */
     }
     free( xbuf );
     return ( -1 );
