@@ -209,18 +209,20 @@ _set_cterm_fallback ()
 {
     unset TCOLOR
 
-    if [ "256" = "$_TTY_COLORS" ]
-    then
-        TCOLOR="-256color -88color -16color -8color"
-    elif [ "88" = "$_TTY_COLORS" ]
-    then
-        TCOLOR="-88color -16color -8color"
-    elif [ "16" = "$_TTY_COLORS" ]
-    then
-        TCOLOR="-16color -8color"
-    elif [ "8" = "$_TTY_COLORS" ]
-    then
-        TCOLOR="-8color"
+    if [ ! -z "$_TTY_COLORS" -a "0" -lt "$_TTY_COLORS" ]; then
+        TCOLOR="+c"
+        if [ "8" -le "$_TTY_COLORS" ]; then
+            TCOLOR="-8color +color8 $TCOLOR"
+        fi
+        if [ "16" -le "$_TTY_COLORS" ]; then
+            TCOLOR="-16color +16color +color $TCOLOR"
+        fi
+        if [ "88" -le "$_TTY_COLORS" ]; then
+            TCOLOR="-88color +88color $TCOLOR"
+        fi
+        if [ "256" -le "$_TTY_COLORS" ]; then
+            TCOLOR="-256color +256color $TCOLOR"
+        fi
     fi
 
     FALL="$1"
@@ -387,14 +389,28 @@ _q_getterm ()
             _TERMSET=1
             ;;
         '\033[?6c')
-            _debug_p "vt102 Primary DA response: unknown subtype."
-            # NOT PUTTY
-            _TTY_COLORS=0;   export _TTY_COLORS
-            _set_term_fallback_x vt102
-            _TERMSET=1
+            _debug_p "vt102 Primary DA response."
+            if [ -z "$TERM2DA" ]
+            then
+                ## THIS IS A BAD CALL, HONESTLY
+                ## Nothing in the vt100 range originally responded to
+                ## Secondary DA (it didn't exist yet), but
+                ## every other terminal emulator gives us SOME
+                ## other response.
+                _debug_p "No response on Secondary DA, probably 'st'"
+                _TTY_COLORS=8;   export _TTY_COLORS
+                _set_term_fallback_x st vt102
+                _TERMSET=1
+            else
+                # NOT PUTTY
+                _TTY_COLORS=0;   export _TTY_COLORS
+                _set_term_fallback_x vt102
+                _TERMSET=1
+            fi
             ;;
         '\033[?1;0c')
             # VT 101
+            _debug_p "vt101 Primary DA response."
             if [ '\033[>0;10;1c' == "${TERM2DA}" ]
             then
                 _debug_p "Windows 10/11 Terminal"
@@ -414,7 +430,15 @@ _q_getterm ()
             ;;
         '\033[?1;2c')
             # Claims to be a vt100, which could mean...
-            if [ '\033[>0;115;0c' = "$TERM2DA" ]
+            _debug_p "vt100 Primary DA response."
+            if [ '\033[>84;0;0c' = "$TERM2DA" ]
+            then
+                _debug_p "Byobu terminal"
+                _HAS_EMOJI=1;    export _HAS_EMOJI
+                _TTY_COLORS=256; export _TTY_COLORS
+                _set_cterm_fallback xterm
+                _TERMSET=1
+            elif [ '\033[>0;115;0c' = "$TERM2DA" ]
             then
                 # Cool Retro Term or Konsole
                 eval `"${TERMREAD}" '!' -b`
@@ -498,19 +522,27 @@ _q_getterm ()
             ;;
         '\033[?63;'*c)
             _debug_p "vt320 or Clone"
-            _set_term_fallback_x vt340-basic vt340 vt320-basic \
-                vt320 vt300
-            _TERMSET=1
+            if [ 'xterm-256color' = "$TERM2DA" ]
+            then
+                _debug_p "ConnectBot Android"
+                _TTY_COLORS=256; export _TTY_COLORS
+                _set_cterm_fallback xterm
+            else
+                _debug_p "Unknown subtype"
+                _TTY_COLORS=0; export _TTY_COLORS
+                _set_term_fallback_x vt320-basic vt320 vt300
+                _TERMSET=1
+            fi
             ;;
         '\033[?62;1;2;4;6;9;15;16;22;28c')
-            _debug_p "xterm in vt240 mode"
+            _debug_p "xterm in vt240 mode ([?62; with feature 4)"
             _TTY_COLORS=256; export _TTY_COLORS
             _set_term_fallback_x xterm-vt240 vt240 xterm-vt220 \
                 vt220 vt200 xterm-256color
             _TERMSET=1
             ;;
         '\033[?62;1;2;6;9;15;16;22;28c')
-            _debug_p "xterm in vt220 mode"
+            _debug_p "xterm in vt220 mode ([?62; without feature 4)"
             _TTY_COLORS=256; export _TTY_COLORS
             _set_term_fallback_x xterm-vt220 vt220 vt200 xterm-256color
             _TERMSET=1
@@ -547,10 +579,19 @@ _q_getterm ()
                 SP_EMOJISPACE=0; export SP_EMOJISPACE
                 _set_cterm_fallback iterm2 xterm-vt220 vt220 vt200 xterm
                 _TERMSET=1
+            elif [ '\033[>1;4000;29c' = "$TERM2DA" ]
+            then
+                _debug_p "Secondary DA looks like kitty"
+                _TTY_COLORS=256; export _TTY_COLORS
+                _HAS_EMOJI=1;    export _HAS_EMOJI
+                _set_cterm_fallback xterm-kitty kitty-direct kitty \
+                    xterm-vt240 vt240 xterm-vt220 vt220 vt200 \
+                    xterm
+                _TERMSET=1
             else
-                _debug_p "Secondary DA looks like iTerm2"
+                _debug_p "Secondary DA unrecognized"
                 _TTY_COLORS=0; export _TTY_COLORS
-                _set_term_fallback_x xterm-vt240 vt240 xterm-vt220 \
+                _set_cterm_fallback xterm-vt240 vt240 xterm-vt220 \
                     vt220 vt200 xterm-256color
                 _TERMSET=1
             fi
