@@ -20,11 +20,16 @@ have spent writing the code for this.*
 
 ```
 $ termread -t
-TERMID='\033[65;1;9c'; export TERMID;
+TERMID='\033[?1;2c'; export TERMID;
 $ termread -b
 TERMBG='\033]11;rgb:2e2e/3434/3636\033\'; export TERMBG;
 $ termread -c 231
 COLOR='\033]4;231;rgb:ffff/ffff/ffff\07'; export COLOR;
+$ termread -t -2
+TERMID='\033[?1;2c'; export TERMID;
+TERM2DA='\033[>1;95;0c'; export TERM2DA;
+$ termread -p "\e[6n"
+READ='\033[24;1R'; export READ;
 ```
 
 In practice, each of these would be wrapped in an eval:
@@ -49,6 +54,8 @@ I have tested react to **termread**.
 - [termread -b](Dash-b.md)
 - `termread -c <n>`
     - Like -b, but ask for color number description)
+- `termread -p <s>`
+    - Send your own string to the terminal and wait for a response.
 - `termread --env MYSTR`
     - Use MYSTR instead of the default name in the output.
     - Only valid with other options.
