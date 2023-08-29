@@ -13,16 +13,16 @@
  * LICENSE: Embedded at bottom...
  *
  */
+#define VERSION "1.12"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <termios.h>
+#include <ctype.h>
 #include <string.h>
 #include <errno.h>
 #include <time.h>
-
-const char VERSION[] = "1.11";
 
 int term_cleanline();
 int is_next( int argc, int cx );
@@ -39,6 +39,7 @@ struct sopt {
     int getcolor;   /* VT100 color query */
     int termname;   /* VT* terminal caps query */
     int term2da;
+    int print;
     int justerase;  /* VT* terminal current line erase sequence */
     int ignoreterm; /* Ignore $TERM */
     int wantstat;
@@ -50,6 +51,7 @@ struct sopt {
     long int stat_d_final;
     size_t bufsz;
     FILE * termfh;
+    char * custom_print;
     char * var;
     char * term;
     char * buf;
@@ -61,6 +63,7 @@ char background_var[] = "TERM_BG";
 char termname_var[] = "TERMID";
 char term2da_var[] = "TERM2DA";
 char getcolor_var[] = "COLOR";
+char print_var[] = "READ";
 char default_var[] = "OUT";
 
 const char vt_termreq[] = "\033Z";
@@ -556,6 +559,10 @@ int is_vtxxx ( const char * term )
         "xwsh",
         "z340",
         "z340-nam",
+        // Does not officially have u9, but does support:
+        "vt100",
+        "vt101",
+        "vt102",
         "\000"
     };
     return is_matchlist( term, term_list );
@@ -564,68 +571,91 @@ int is_vtxxx ( const char * term )
 void
 prinhelp(void)
 {
+    const char * actions = "\
+\n\
+  ACTIONS:\n\
+\n\
+    -t\n\
+    --term      Ask for terminal ident 'primary DA'\n\
+\n\
+    -2\n\
+    --term2     Ask for terminal ident 'secondary DA'\n\
+\n\
+    -b\n\
+    --bg        Ask for terminal background color\n\
+\n\
+    -c <nnn>\n\
+    --color <nnn>\n\
+                Ask for the RGB of a color by number.\n\
+\n\
+    -p <s>\n\
+    --print <s>\n\
+                Print custom query.\n\
+";
+
+    const char * debug_actions = "\
+\n\
+    --erase     Print 'erase current line' sequence,\n\
+                    and exit immediately.\n\
+";
+
+    const char * options = "\
+\n\
+  OPTIONS:\n\
+\n\
+    !           Ignore TERM env, asks as if xterm.\n\
+\n\
+    -d <nnnn>\n\
+    --delay <nnnn>\n\
+                Milliseconds to wait for first reply.\n\
+                default: 500 ( 0.5 seconds ).\n\
+\n\
+    --var <name>\n\
+                Variable name for shell readable output.\n\
+                Only used for first output if multiple.\n\
+\n\
+    -s\n\
+    --stats     Print stats info after read response.\n\
+\n\
+    -v\n\
+    --verbose   Extra output.\n\
+";
+
+    const char * debug_options = "\
+\n\
+    -o </dev/tt...>\n\
+    --tty </dev/tt...>\n\
+                Open this instead of current term.\n\
+                Probably won't work.\n\
+";
+
+    const char * about = "\
+\n\
+  ABOUT:\n\
+\n\
+    -L\n\
+    --license   Print license and exit.\n\
+\n\
+    -V\n\
+    --version   Print version number (" VERSION ") and exit.\n\
+\n\
+    -h\n\
+    --help      This help.\n\
+";
+
     FILE *out = stderr;
     if ( opt.wanthelp ) {
         out = stdout;
     }
-    fprintf(out, "\n");
-    fprintf(out, "  ACTIONS:\n");
-    fprintf(out, "\n");
-    fprintf(out, "    -t\n");
-    fprintf(out, "    --term    Ask for terminal ident 'primary DA'\n");
-    fprintf(out, "\n");
-    fprintf(out, "    -2\n");
-    fprintf(out, "    --term2   Ask for terminal ident 'secondary DA'\n");
-    fprintf(out, "\n");
-    fprintf(out, "    -b\n");
-    fprintf(out, "    --bg      Ask for terminal background color\n");
-    fprintf(out, "\n");
-    fprintf(out, "    -c <nnn>\n");
-    fprintf(out, "    --color <nnn>\n");
-    fprintf(out, "              Ask for the RGB of a color by number.\n");
+    fprintf(out, "%s", actions);
     if ( opt.debug ) {
-        fprintf(out, "\n");
-        fprintf(out, "    --erase   Print 'erase current line' sequence,\n");
-        fprintf(out, "               and exit immediately.\n");
+        fprintf(out, "%s", debug_actions);
     }
-    fprintf(out, "\n");
-    fprintf(out, "  OPTIONS:\n");
-    fprintf(out, "\n");
-    fprintf(out, "    !         Ignore TERM env, asks as if xterm.\n");
-    fprintf(out, "\n");
-    fprintf(out, "    -d <nnnn>\n");
-    fprintf(out, "    --delay <nnnn>\n");
-    fprintf(out, "              Milliseconds to wait for first reply.\n");
-    fprintf(out, "              default: 500 ( 0.5 seconds ).\n");
-    fprintf(out, "\n");
-    fprintf(out, "    --var <name>\n");
-    fprintf(out, "              Variable name for shell readable output.\n");
-    fprintf(out, "              Only used for first output if multiple.\n");
-    fprintf(out, "\n");
-    fprintf(out, "    -s\n");
-    fprintf(out, "    --stats   Print stats info after read response.\n");
-    fprintf(out, "\n");
-    fprintf(out, "    -v\n");
-    fprintf(out, "    --verbose Extra output.\n");
+    fprintf(out, "%s", options);
     if ( opt.debug ) {
-        fprintf(out, "\n");
-        fprintf(out, "    -o </dev/tt...>\n");
-        fprintf(out, "    --tty   </dev/tt...>\n");
-        fprintf(out, "              Open this instead of current term.\n");
-        fprintf(out, "              Probably won't work.\n");
+        fprintf(out, "%s", debug_options);
     }
-    fprintf(out, "\n");
-    fprintf(out, "  ABOUT:\n");
-    fprintf(out, "\n");
-    fprintf(out, "    -L\n");
-    fprintf(out, "    --license Print license and exit.\n");
-    fprintf(out, "\n");
-    fprintf(out, "    -V\n");
-    fprintf(out, "    --version Print version number (%s) and exit.\n",
-                                                    VERSION);
-    fprintf(out, "\n");
-    fprintf(out, "    -h\n");
-    fprintf(out, "    --help    This help.\n");
+    fprintf(out, "%s", about);
     if ( opt.wanthelp ) {
         fprintf(out, "\n");
         fprintf(out, "Effective TERM='%s'\n", opt.envterm);
@@ -717,6 +747,27 @@ args( int argc, char *argv[] )
         {
             opt.wantstat = 1;
             DEBUG("--stats requested.\n", NULL);
+        }
+        else if (
+            (      ( ( strlen("-p") <= strlen(argv[cx]) )
+                && ( 0 == strcmp("-p", argv[cx]) ) )
+            ) || (
+                   ( ( strlen("--print") <= strlen(argv[cx]) )
+                && ( 0 == strcmp("--print", argv[cx]) ) )
+            )   )
+        {
+            if ( is_next( argc, cx ) ) {
+                opt.print = 1;
+                opt.custom_print = argv[1 + cx];
+                cx++;
+                DEBUG("--print [%s] ACTION requested.\n", opt.custom_print);
+            } else {
+                fprintf(stderr,
+                    "Unable to read string after option '%s'\n",
+                    argv[cx]);
+                opt.needhelp = 1;
+            }
+            action_requested++;
         }
         else if (
             (      ( ( strlen("-c") <= strlen(argv[cx]) )
@@ -905,7 +956,11 @@ args( int argc, char *argv[] )
             DEBUG("--var [%s] will only be used for --color\n", opt.var );
         }
         else if ( opt.background ) {
-            DEBUG("--var [%s] will only be used for --bg %i\n", opt.color_num );
+            DEBUG("--var [%s] will only be used for --bg %i\n", opt.var,
+                    opt.color_num );
+        }
+        else if ( opt.print ) {
+            DEBUG("--var [%s] will only be used for --print\n", opt.var );
         }
     }
     return 1;
@@ -1004,6 +1059,194 @@ term_cleanline()
 }
 
 int
+hextobin ( const unsigned char h )
+{
+    switch ( h )
+    { /* No break, everything returns */
+        case '0':
+            return 0;
+        case '1':
+            return 1;
+        case '2':
+            return 2;
+        case '3':
+            return 3;
+        case '4':
+            return 4;
+        case '5':
+            return 5;
+        case '6':
+            return 6;
+        case '7':
+            return 7;
+        case '8':
+            return 8;
+        case '9':
+            return 9;
+        case 'a':
+        case 'A':
+            return 10;
+        case 'b':
+        case 'B':
+            return 11;
+        case 'c':
+        case 'C':
+            return 12;
+        case 'd':
+        case 'D':
+            return 13;
+        case 'e':
+        case 'E':
+            return 14;
+        case 'f':
+        case 'F':
+            return 15;
+    }
+    return 0;
+}
+
+#define NO_NEWLINE 0x2
+#define INTERPRET_ESC 0x4
+
+int
+doprint( int opts, FILE *fh, char* out )
+{
+    int buildval = 0;
+    int retval = 0;
+    for ( int cx = 0; cx < strlen( out ); cx++ ) {
+        if ( opts & INTERPRET_ESC ) {
+            if ( '\\' == out[cx] ) {
+                if ( 0 == sncmp ( "\\\\", &out[cx], 2 ) ) {
+                    putc('\\', fh);
+                    retval++;
+                    cx++;
+                }
+                else if ( 0 == sncmp ( "\\a", &out[cx], 2 ) ) { // BEL
+                    putc(7, fh);
+                    retval++;
+                    cx++;
+                }
+                else if ( 0 == sncmp ( "\\b", &out[cx], 2 ) ) { // BS
+                    putc(8, fh);
+                    retval++;
+                    cx++;
+                }
+                else if ( 0 == sncmp ( "\\e", &out[cx], 2 ) ) { // ESC
+                    /* Escape Character */
+                    putc( 0x1b , fh);
+                    retval++;
+                    cx++;
+                }
+                else if ( 0 == sncmp ( "\\f", &out[cx], 2 ) ) { // FF
+                    putc( 0x0c , fh);
+                    retval++;
+                    cx++;
+                }
+                else if ( 0 == sncmp ( "\\n", &out[cx], 2 ) ) { // NL
+                    putc( 0x0a , fh);
+                    retval++;
+                    cx++;
+                }
+                else if ( 0 == sncmp ( "\\r", &out[cx], 2 ) ) { // CR
+                    putc( 0x0d , fh);
+                    retval++;
+                    cx++;
+                }
+                else if ( 0 == sncmp ( "\\t", &out[cx], 2 ) ) { // HT
+                    putc( '\t' , fh);
+                    retval++;
+                    cx++;
+                }
+                else if ( 0 == sncmp ( "\\v", &out[cx], 2 ) ) { // VT
+                    putc( 0x0b , fh);
+                    retval++;
+                    cx++;
+                }
+                else if ( 0 == sncmp ( "\\x", &out[cx], 2 ) ) { // HEX
+                    if ( isxdigit( out[cx+2] ) ) {
+                        if ( isxdigit( out[cx+3] ) ) {
+                            buildval = 16 * hextobin( out[cx+2] );
+#ifdef DEBUG
+    fprintf( stderr, "HEX BUILD pos 1: '%c', Now: %d \\x%02x \\0%03o\n",
+            out[cx+2], buildval, buildval, buildval );
+#endif
+                            buildval = buildval + hextobin( out[cx+3] );
+#ifdef DEBUG
+    fprintf( stderr, "HEX BUILD pos 2: '%c', Final: %d \\x%02x \\0%03o\n",
+            out[cx+2], buildval, buildval, buildval );
+#endif
+                            cx = cx + 3;
+                        } else {
+                            buildval = hextobin( out[cx+2] );
+#ifdef DEBUG
+    fprintf( stderr, "HEX BUILD pos 1: '%c', Final: %d \\x%02x \\0%03o\n",
+            out[cx+2], buildval, buildval, buildval );
+#endif
+                            cx = cx + 2;
+                        }
+                        if ( buildval ) {
+                            putc( buildval , fh);
+                            retval++;
+                        }
+                        buildval = 0;
+                    } else {
+#ifdef DEBUG
+    fprintf( stderr, "HEX ABORT on 'no hexadecimal digit'.\n");
+#endif
+                        putc( '\\' , fh);
+                        retval++;
+                    }
+                }
+                else if ( 0 == sncmp ( "\\0", &out[cx], 2 ) ) { // OCTAL
+                    if ( '0' <= out[cx+2] && '7' >= out[cx+2] ) {
+                        cx++;
+                        for ( int dx = 0; dx < 3; dx++ ) {
+                            if ( '0' <= out[cx+1] && '7' >= out[cx+1] ) {
+                                buildval =
+                                    (buildval * 8) + hextobin( out[cx+1] );
+#ifdef DEBUG
+    fprintf( stderr, "OCTAL BUILD pos %d: '%c', Now: %d \\x%02x \\0%03o\n",
+            dx, out[cx+1], buildval, buildval, buildval );
+#endif
+                                cx++;
+                            } else {
+#ifdef DEBUG
+    fprintf( stderr, "OCTAL STOP pos %d: '%c', Final: %d \\x%02x \\0%03o\n",
+            dx, out[cx+1], buildval, buildval, buildval );
+#endif
+                                dx=3;
+                            }
+                        }
+                        if ( buildval ) {
+                            putc( buildval , fh);
+                            retval++;
+                        }
+                        buildval = 0;
+                    } else {
+#ifdef DEBUG
+    fprintf( stderr, "OCTAL ABORT on 'no octal digit'.\n");
+#endif
+                        putc( '\\' , fh);
+                        retval++;
+                    }
+                } else {
+                    putc( '\\' , fh);
+                    retval++;
+                }
+            } else {
+                putc( out[cx] , fh);
+                retval++;
+            }
+        } else {
+            putc( out[cx] , fh);
+            retval++;
+        }
+    }
+    fflush( fh );
+    return retval;
+}
+
+int
 term_write()
 {
     FILE * fh;
@@ -1094,6 +1337,14 @@ term_write()
                 fprintf( stderr, "# is a feature of 'vt220' descendents.\n" );
             }
         }
+    }
+    else if ( 1 == opt.print ) {
+        opt.print = 0;
+        if ( NULL == opt.var ) {
+            opt.var = print_var;
+            DEBUG("Set default --print var to %s\n", opt.var );
+        }
+        doprint( INTERPRET_ESC | NO_NEWLINE, fh, opt.custom_print );
     }
     else {
         if ( 0 == is_vtxx( opt.envterm ) ) {
@@ -1226,7 +1477,12 @@ do_term()
         exit ( 1 );
     }
 
-    while ( opt.termname + opt.background + opt.getcolor + opt.term2da ) {
+    while (   opt.termname
+            + opt.background
+            + opt.getcolor
+            + opt.term2da
+            + opt.print )
+    {
         term_write();
 
         got = readInput(bsz, in);
