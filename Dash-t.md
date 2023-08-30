@@ -12,31 +12,49 @@ bourne shell compatible variable string in the format:
 TERMID='string'; export TERMID; 
 ```
 
+Exits silently if the terminal does not respond.
+
+## TermRead, the TERM environment variable and `-t`
+
+TermRead does check the TERM environment variable when it runs.
+First, there are a subset of `terminfo` entries that claim to respond
+to *DECID* and not the much more common *Primary DA*.
+
+For these TERM entries (hard-coded at compile time), TermRead will
+send *DECID*, and wait for a response (see --delay).
+
+For all TERM entries (hard-coded at compile time) that claim to
+respond to *Primary DA*, TermRead will send both *Primary DA*
+and `ENQ`.
+
+For any unknown term entry, TermRead will print an error to stderr.
+The `!` argument can be used to force *Primary DA* capable treatment.
+
+My own testing has shown that it is harmless to send *Primary DA*
+and *ENQ* in one string.  Doing this has the benefit of sniffing out
+PuTTY (which has many quirks of its own), and `rxvt` which will
+essentially respond twice.
+
 ## Sends
 
-So long as the TERM environment variable identifies as
-vtXX, xtXX, or puXX, but NOT vt52,
-it will send the following string to the terminal:
-
-```
-\033[c\005
-```
+| DECID | `\033Z` | ESC Z |
+| Primary DA | `\033[c\005` | CSI c ENQ |
 
 ## Returns
 
 ```
-TERMID=' <escaped sequence> '; export TERMID; 
+TERMID='<sequence>'; export TERMID; 
 ```
 
 Where sequence MAY be on of:
 
 | Sequence                        | Observed Terminal             |
 |:--------------------------------|:------------------------------|
+| `\033/Z`                        | xterm in vt52 emulation mode  |
 | `\033/1;2c`                     | Apple Terminal.app (Catalina) |
 | `\033[?1;0c`                    | Microsoft Terminal (store)    |
 | `\033[?65;1;9c`                 | Gnome Terminal                |
-| `\033[?65;1;9c`                 | lxterminal (Linux)            |
-| `\033[?64;1;2;6;9;15;18;21;22c` | xterm (Linux)                 |
+| `\033[?64;1;2;6;9;15;18;21;22c` | xterm in vt420 default mode   |
 | `\033[?1;2c\033[?1;2c`          | rxvt (Linux)                  |
 | `\033[?6cPuTTY`                 | PuTTY (Windows)               |
 | `\033[?6c`                      | xvt (Linux)                   |
@@ -47,88 +65,9 @@ the features of a VT400 series terminal with 8 available options, see below.
 An `xterm` can be complied to emulate other options and other terminal
 types.
 
-# Some Technical History
+# Returned Code Meanings
 
-Even before computers were a thing, as far back as 1835, engineers were
-working on what would become telegraphs.  Samuel Morse patented a machine
-capable of recording recieving letters over a closed circuit.  Over the next 
-80 years, refinements were made until there was a Teleprinter capable of
-sending and receiving characters without the need to manually fine-tune 
-clockwork timing mechanisms on both sides.
-
-Versions of this from the 1850s and on were used to transmit news between
-cities, and they printed everything onto thin strips of paper, all in a row,
-but other places can talk about "ticker tape" better than I can.
-
-So 1908 brings the first Teleprinter capable of automatic synchronization 
-using start and stop signals between characters.  These became relatively 
-common for use between offices of large companies and governments by 1930.
-
-Notably, the company born from the start/stop signalling would later rename
-themselves Teletype, which much like Kleenex, would become the word that
-got used to describe all Teleprinter devices (and is still used as the
-name of a device on a computer that allows textual interaction).
-
-1924 brought the first common communication standard to be put in actual 
-common use, the [ITU2](https://en.wikipedia.org/wiki/Baudot_code#ITA2) 
-standard came into existence.  And the version of this used in Europe 
-included a spot for a control character called `ENQ` (the US variant, 
-called `US TTY` was based on the same standard would print a "$" when
-recieved).
-
-Some Teleprinters included a key or button with WRU (Who are You) or "Here Is"
-where WRU was typically printed on and a varient of the `E` key.  This was
-put on teleprinters as a way to find if the remote side was on and listening,
-and each machine could be "programmed" by removing tabs from a rotating drum.
-Manufacturers had either 20 or 22 characters of customizable response.
-The `ENQ` function ended up in ASCII since its 1963 introduction.
-
-When DEC started building Video Terminals (VT), the circuitry to respond to 
-`ENQ` was considered too slow, so this signal was ignored (VT05, VT50, etc),
-and the first DEC VT to respond to `ENQ` with a customizable string was the
-VT100 model.
-
-**Jumping to modern terminal emulators**, Simon Tatham's PuTTY has
-a programmable response to `ENQ`, which defaults to `PuTTY` out of the box.
-iTerm2 on macOS also has a programmable response, and its default is empty,
-just like a Teleprinter when shipped new.  The terminal `rxvt` also responds
-to `ENQ`, but not with a customizable response (more below).
-
-The first DEC Video Terminal, the VT05, did not have any feature or function
-that would auto-respond back to a host computer in any way.  However, just
-as Teleprinter manufactures of the early 20th century had figured out, this
-simple idea was important.  When they did introduce this idea into their
-next model, the VT50, instead of using `ENQ`, DEC instead did a 
-non-customizable per-model response to a two-character sequence, '\033Z`, 
-called *DECID*.  See [Observed Output](./Observed_Output.md) for specifics.
-
-The three character sequence, `\033[c`, *Device Attributes* (DA):  was added 
-by Digital Equipment Corp for its VT100 line of terminals.  This sequence is 
-fairly standard for *soft terminals*.  DEC terminals from the VT100 through 
-the VT102, still replied to `\033Z` *DECID*, but from the VT200 series on, 
-it would only respond to *DECID* if it were specifically in VT50 
-compatibilty mode.  The VT200 series introduced *Secondary DA*, and renamed
-Device Attributes to *Primary DA*.
-
-Every terminal emulator I have tested responds to *Primary DA* with a string
-that looks like a valid DEC *Primary DA* response.  The terminal emulator
-package `rxvt` responds to `ENQ` with its *Primary DA* response.
-
-## Term Read and `-t`
-
-My own testing has shown that it is harmless to send *Primary DA* and *ENQ* 
-in one string.  Doing this has the benefit of sniffing out PuTTY (which has 
-many quirks of its own), and `rxvt` which will essentially respond twice.
-
-# Actual Code Meanings
-
-While researching this program (but mostly the documentation),
-I did a lot of searching through archives of manuals on various
-serial terminals produced by Digital Equipment Corp (DEC), and
-took notes, which appear below.  The info that dosn't fit here
-ended up on the [VT history](VT_History.md) page.
-
-# VT Terminals
+## VT Terminals
 
 The following is scraped out of old DEC manuals and xterm source code.
 
@@ -140,7 +79,7 @@ never to *primary DA* sequence, the return code starts with these two bytes
     \033[       # ESC + [
 ```
 
-See [Observed Output](./Observed_Output.md) for return codes.
+See [Observed Output](./Observed_Output.md) for more known return codes.
 
 ## VT100 through VT125 Terminals
 
@@ -188,7 +127,7 @@ Any subsequent positions describe the options available for that terminal.
 Subsequent positions, separated by semicolon (;), are output in
 numeric order and each number always has the same meaning.
 
-### Options
+### VT Option codes
 
 | Availility | Option Number | Definition |
 |----|----|----|
@@ -217,4 +156,60 @@ numeric order and each number always has the same meaning.
 
 *NOTE* VT550 means options found in the DEC manual for VT550, but
 could have been present in other terminals before or after.
+
+# Some Technical History
+
+Even before computers were a thing, Teleprinters hooked up to
+telegraph lines were a thing, and a feature of some of these early
+devices was to respond to a certain character (called `ENQ`) with a
+customizable (per device) with a 20 or 22 character string.
+
+How devices got there is some [Teleprinter History](./TP_History.md)
+that I had to include.  Mostly, there was a need in multipoint
+networks to verify that a reciever was on and have it identify itself.
+
+## DEC Video Terminals (VT)
+
+While researching this program (but mostly the documentation),
+I did a lot of searching through archives of manuals on various
+serial terminals produced by Digital Equipment Corp (DEC), and
+took notes, which appear below.  The info that dosn't fit here
+ended up on the [VT history](VT_History.md) page.
+
+When DEC started building Video Terminals (VT), the circuitry to
+respond to `ENQ` was considered too slow, so this signal was
+ignored (VT05, VT50, etc), and the first DEC VT to respond to
+`ENQ` with a customizable string was the VT100 model.
+
+The first DEC Video Terminal, the VT05, did not have any feature or
+function that would auto-respond back to a host computer in any way.
+However, just as Teleprinter manufactures of the early 20th century
+had figured out, this basic feature was important.
+
+When DEC did introduce a similar feature into their next model,
+the VT50, instead of using `ENQ`, DEC instead returned a
+non-customizable per-model response to a two-character
+sequence, '\033Z`, called *DECID*.  See [Observed Output](./Observed_Output.md) for specifics.
+
+**Jumping to modern terminal emulators**, Simon Tatham's PuTTY has
+a programmable response to `ENQ`, which defaults to `PuTTY` if left
+unmodified.  The program iTerm2 on macOS also has a programmable
+response, and its default is empty, just like a Teleprinter when
+shipped new.  The terminal `rxvt` also responds to `ENQ`, but not
+with a customizable response, but with a *Primary DA*
+response (see below).
+
+The three character sequence, `\033[c`, *Device Attributes* (DA),
+was added by Digital Equipment Corp for its VT100 line of terminals.
+A response to this sequence is fairly standard for *soft terminals*.
+DEC terminals from the VT100 series, still replied to `\033Z` *DECID*,
+but from the VT200 series on, it would only respond to *DECID* if it
+were specifically in VT50 compatibilty mode.  The VT200 series
+introduced *Secondary DA*, and renamed Device Attributes
+to *Primary DA*.
+
+Every terminal emulator I have tested responds to *Primary DA* with
+a string that looks like a valid DEC *Primary DA* response.
+The terminal emulator package `rxvt` responds to `ENQ` with its
+*Primary DA* response.  Responses and meaning are above.
 

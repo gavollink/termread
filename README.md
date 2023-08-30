@@ -1,20 +1,60 @@
 # TermRead
 
-Very small C utility for reading information about a modern soft terminal.
-
-In these modern times, almost every conceivable terminal sets the TERM
-environment variable to '**xterm**'.
-Thing is, with the exception of default starts of X11, I don't
-actually use 'xterm' and the actual terminal I'm using may
-have a better termcap on the system I'm attached to, and might
-support colors, even though it doesn't say so.
+Very small C utility for reading information about a
+modern soft terminal.
 
 This is a UNIX style (meaning very small) utility that is meant to
-be used in a script (like a .bashrc) to help figure out what the
-terminal can do.
+be used in a script (like a .bashrc) to help figure out what 
+terminal is actually attached.
 
 *I have spent more time writing documentation about VT terminals than I
 have spent writing the code for this.*
+
+## Command Line (as of release 1.12)
+
+### Actions
+
+At least one action must be chosen
+
+| [-t](./Dash-t.md) | Ask for terminal identity. |
+| [-2](./Dash-2.md) | Ask for terminal version. |
+| [-b](./Dash-b.md) | Ask terminal to respond with background color. |
+| -c \<nnn> | Ask terminal for the color represented by supplied number |
+| [-p \<str>](./Dash-p.md) | Send the terminal custom text |
+
+### Options
+
+| !  | Ignore the TERM environment variable, treat as VT100 or newer  |
+| -d \<nnn> | Milliseconds to wait for the first character of a response |
+| --var \<name> | Variable name for shell readable output. `*` |
+| -s | Drop stats after each action. |
+| -v | Verbose: extra output |
+
+`*` If there are multiple actions, the --var can only be used on the
+first (in Action Order above).  Argument position jockeying won't
+change this.  Just call TermRead multiple times.
+
+### About
+
+| -L | Print that license and exit |
+| -V | Print the version and exit |
+| -h | Print some help and exit |
+
+### Long Options
+
+| -t | --term    |
+| -2 | --term2   |
+| -b | --bg , --background |
+| -c | --color   |
+| -p | --printf , --print |
+| !  |           |
+| -d | --delay   |
+|    | --var     |
+| -s | --stats   |
+| -v | --verbose |
+| -L | --license |
+| -V | --version |
+| -h | --help    |
 
 # Examples
 
@@ -30,6 +70,11 @@ TERMID='\033[?1;2c'; export TERMID;
 TERM2DA='\033[>1;95;0c'; export TERM2DA;
 $ termread -p "\e[6n"
 READ='\033[24;1R'; export READ;
+$ termread -c 231 --var CLR231
+CLR231='\033]4;231;rgb:ffff/ffff/ffff\07'; export CLR231;
+$ eval `termread -c 231 --var CLR231`
+$ echo $CLR231
+\033]4;231;rgb:ffff/ffff/ffff\07
 ```
 
 In practice, each of these would be wrapped in an eval:
@@ -47,66 +92,71 @@ I have tested react to **termread**.
 
 - [Observed Output](Observed_Output.md)
 
-# Options
-
-- [termread -t](Dash-t.md)
-- [termread -2](Dash-2.md)
-- [termread -b](Dash-b.md)
-- `termread -c <n>`
-    - Like -b, but ask for color number description)
-- `termread -p <s>`
-    - Send your own string to the terminal and wait for a response.
-- `termread --env MYSTR`
-    - Use MYSTR instead of the default name in the output.
-    - Only valid with other options.
-- `termread ! ...`
-    - Ignore TERM environment variable (try anyway)
-    - Only valid with other options.
-
-```
-$ termread -c 231 --env CLR231
-CLR231='\033]4;231;rgb:ffff/ffff/ffff\07'; export CLR231;
-$ eval `termread -c 231 --env CLR231`
-$ echo $CLR231
-\033]4;231;rgb:ffff/ffff/ffff\07
-```
-
 # Why
 
-There is a shell built-in called 'read' that can do part of this,
-but it only works for me on `bash` and only on some systems.
-All of these systems can compile this simple code.
+In these modern times, every text interface to a computer, responds
+to escape codes invented by Digital Equipment Corporation *DEC* for
+their Video Terminal line of terminals, starting with the basics set
+up for the VT50 line of terminals.
 
-I find it useful to be able to query the terminal I'm on to try to figure
-out what its capabilities are before my startup files (.profile) try to
-set my default prompt.
+When the American National Standards Institute looked to standardize
+control codes, they chose codes that were a subset of the controls
+for the DEC VT100 terminal.  This was even available in MS-DOS 5.0 by
+loading ANSI.SYS.
 
-Between `-t` and `-2`, I can usually get enough into environment variables
-that I know which terminal program I happen to be using (or close enough).
+The first UNIX graphical emulation of a terminal under 
+the `X windows` system, xterm, carefully emulates a DEC VT terminal
+(the exact emulated model has changed over the years).
+
+These days, almost every software defined terminal sets
+the default TERM environment variable to '**xterm**'.
+That also means that the default terminfo entry for xterm, as shipped
+by most vendors is, itself, a simplified entry, catering to the
+lowest common denominator terminal features.
+
+Thing is, with the exception of default starts of X11, I don't
+actually use 'xterm' and the actual terminal I'm using may
+have a better terminfo definition on the system that I'm attached to,
+and might support colors, even though `xterm` might not say so.
+
+There is a shell built-in called 'read' that can do what this does,
+but it only works for me on `bash` and only on some systems I
+regularly interact with.  Yet, all of these systems can compile this
+simple code.
+
+I find it useful to be able to query the terminal I'm on to try to
+figure out what it actually is in the beginning of my startup
+files (.profile).  I will then reset TERM to the best available
+matching terminfo entry available on that system.
+
+Between `-t` and `-2`, I usually have enough info that I know which
+terminal program I happen to be using (or close enough).
 
 ## Support for TERM=
 
-This program will JUST WORK if the TERM environment variable is set to
+There's a helper program in here that creates C-Functions that are
+just long lists of terminals sorted by the terminfo entry for
+`user 9`.  Of these, I use the two lists that cover terminals that
+only respond to *DECID*, and those that respond to *Primary DA*.
 
-- xterm
-- putty
-- nsterm
-- konsole
-- kitty
-- vt...
+That itself is run on a system with the latest terminfo database
+that ncurses has to offer, and even so, I've added a few entries
+on top of each.
 
 NOTE:
-The first year + of this software did not support VT50/52/55/62,
+The first year + of this software, it did not support VT50/52/55/62,
 as these require `DECID` send instead of `Primary DA` which all
 modern terminals support.
 
-However, adding this support was fairly trivial,
-so I finally made the change...
+However, adding this support was fairly trivial, so I finally made
+the change...
 
 Basically, if TERM is set to any of these four;
-"vt50", "vt52", "vt55", or "vt62", the program will send a `DECID` request.
+"vt50", "vt52", "vt55", or "vt62", the program will send a `DECID`
+request for action `-t` and will print an error on `-2`, `-b`,
+or `-c`.
 
-### Weird Exception ###
+### Actual DECID
 
 I haven't found any soft terminals that respond to `DECID`,
 but not `Primary DA`, with one very weird exception.
@@ -117,10 +167,12 @@ in that case alone, the terminal type will ONLY be returned from a
 
 Useful to note that `xterm` can *also* be started in *Tektronix* modes
 which wouldn't be compatible with this at all.
+
 I have never encountered a program that only talks *Tektronix*, so I've
 never considered trying to add such support here.
 
 # Just because
 
-Check out the [VT History](VT_History.md) page.
+Check out the [Teleprinter](./TP_History.md)
+and [VT History](./VT_History.md) pages.
 

@@ -13,7 +13,7 @@
  * LICENSE: Embedded at bottom...
  *
  */
-#define VERSION "1.12"
+#define VERSION "1.13"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -100,7 +100,7 @@ prinversion(void)
 {
     FILE *out = stderr;
     fprintf(out, "\n");
-    fprintf(out, "%s VERSION: %s\n",
+    fprintf(out, "%s Version: %s\n",
                  opt.argv0, VERSION );
 
     return;
@@ -114,8 +114,9 @@ prinusage(void)
         out = stdout;
     }
     fprintf(out, "\n");
-    fprintf(out, "%s [!] [-t] [-2] [-b] [-c <nnn>] [-d <nnnn>] [-s] [-v]\n",
-                 opt.argv0 );
+    fprintf(out,
+            "%s [!] [-t] [-2] [-b] [-p] [-c <nnn>] [-d <nnnn>] [-s] [-v]\n",
+           opt.argv0 );
     fprintf(out, "    OR\n");
     fprintf(out, "%s --help | --version | --license\n",
                  opt.argv0 );
@@ -162,21 +163,6 @@ int is_matchlist ( const char * term, const char ** match )
             free( xbuf );
             return (0);
         }
-    /*  ****************************************
-        * THESE are removed since the lists now come from a helper
-        * program.
-        **** -->
-        sprintf( xbuf, "%s-", match[cx] );
-        if ( 0 == sncmp( xbuf, term, strlen( xbuf ) ) ) {
-            free( xbuf );
-            return (0);
-        }
-        sprintf( xbuf, "%s+", match[cx] );
-        if ( 0 == sncmp( xbuf, term, strlen( xbuf ) ) ) {
-            free( xbuf );
-            return (0);
-        }
-        ****************************************  */
     }
     free( xbuf );
     return ( -1 );
@@ -589,8 +575,9 @@ prinhelp(void)
                 Ask for the RGB of a color by number.\n\
 \n\
     -p <s>\n\
-    --print <s>\n\
+    --printf <s>\n\
                 Print custom query.\n\
+                String escapes will be expanded.\n\
 ";
 
     const char * debug_actions = "\
@@ -754,13 +741,16 @@ args( int argc, char *argv[] )
             ) || (
                    ( ( strlen("--print") <= strlen(argv[cx]) )
                 && ( 0 == strcmp("--print", argv[cx]) ) )
+            ) || (
+                   ( ( strlen("--printf") <= strlen(argv[cx]) )
+                && ( 0 == strcmp("--printf", argv[cx]) ) )
             )   )
         {
             if ( is_next( argc, cx ) ) {
                 opt.print = 1;
                 opt.custom_print = argv[1 + cx];
                 cx++;
-                DEBUG("--print [%s] ACTION requested.\n", opt.custom_print);
+                DEBUG("--printf [%s] ACTION requested.\n", opt.custom_print);
             } else {
                 fprintf(stderr,
                     "Unable to read string after option '%s'\n",
@@ -960,7 +950,7 @@ args( int argc, char *argv[] )
                     opt.color_num );
         }
         else if ( opt.print ) {
-            DEBUG("--var [%s] will only be used for --print\n", opt.var );
+            DEBUG("--var [%s] will only be used for --printf\n", opt.var );
         }
     }
     return 1;
@@ -978,6 +968,7 @@ initTermios(int echo)
     if ( -1 == ret ) {
         fprintf(stderr, "Unable to set terminal attributes: %s\n",
             strerror(errno) );
+        exit(1);
     }
 }
 
@@ -1010,18 +1001,18 @@ term_open()
             } else {
                 fprintf( stderr, "Unable to open '%s': %s\n",
                     opt.term, strerror(errno) );
-                return 0;
+                exit(1);
             }
         } else {
             fprintf( stderr, "Unable to open '%s': %s\n",
                 opt.term, strerror(errno) );
-            return 0;
+            exit(1);
         }
     }
     if ( opt.termfh ) {
         return 1;
     }
-    return 0;
+    exit(1);
 }
 
 int
@@ -1342,7 +1333,7 @@ term_write()
         opt.print = 0;
         if ( NULL == opt.var ) {
             opt.var = print_var;
-            DEBUG("Set default --print var to %s\n", opt.var );
+            DEBUG("Set default --printf var to %s\n", opt.var );
         }
         doprint( INTERPRET_ESC | NO_NEWLINE, fh, opt.custom_print );
     }

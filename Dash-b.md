@@ -39,6 +39,8 @@ Where escaped sequence looks like the following:
 | GGGG | 2 hex digits for green, repeated
 | BBBB | 2 hex digits for green, repeated
 
+TERM_BG is the default for `-b`, --var can change this.
+
 ## Terminals Observed without support
 
 * PuTTY
