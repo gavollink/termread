@@ -42,18 +42,83 @@ Where sequence MAY be on of:
 | `\033[?6c`                      | xvt (Linux)                   |
 | `\033[?6c`                      | Linux console (Ubuntu 20.02)  |
 
-*NOTE* That at least under Ubuntu, `xterm` is claiming to emulate
+*NOTE* That at least under recent releases, `xterm` is claiming to emulate
 the features of a VT400 series terminal with 8 available options, see below.
 An `xterm` can be complied to emulate other options and other terminal
 types.
 
-# Behind the scenes
+# Some Technical History
 
-The sequence, *primary DA*: `\033[c`, was added by Digital Equipment Corp for its vt100 (and later) line of terminals.  This sequence is fairly standard for Xterm compatible _soft terminals_.  Old DEC VT terminals, up to vt102, replied to `\033Z` (DECID), but VERY FEW soft terminals respond to this.
+Even before computers were a thing, as far back as 1835, engineers were
+working on what would become telegraphs.  Samuel Morse patented a machine
+capable of recording recieving letters over a closed circuit.  Over the next 
+80 years, refinements were made until there was a Teleprinter capable of
+sending and receiving characters without the need to manually fine-tune 
+clockwork timing mechanisms on both sides.
 
-The character `\005` is ASCII ENQ (enquiry), and is not a vt control sequence.   PuTTY, by default, will respond to this with the string `PuTTY`, but this can be configured (in PuTTY) per-connection.
+Versions of this from the 1850s and on were used to transmit news between
+cities, and they printed everything onto thin strips of paper, all in a row,
+but other places can talk about "ticker tape" better than I can.
 
-My own testing, so far, has shown that it is harmless to push them both at the same time.  It quickly singles out PuTTY (which has many quirks of its own), and so far, `rxvt` is the only other that responds to ENQ, with the same string as *primary DA*, so it just leaves the same string repeated twice.
+So 1908 brings the first Teleprinter capable of automatic synchronization 
+using start and stop signals between characters.  These became relatively 
+common for use between offices of large companies and governments by 1930.
+
+Notably, the company born from the start/stop signalling would later rename
+themselves Teletype, which much like Kleenex, would become the word that
+got used to describe all Teleprinter devices (and is still used as the
+name of a device on a computer that allows textual interaction).
+
+1924 brought the first common communication standard to be put in actual 
+common use, the [ITU2](https://en.wikipedia.org/wiki/Baudot_code#ITA2) 
+standard came into existence.  And the version of this used in Europe 
+included a spot for a control character called `ENQ` (the US variant, 
+called `US TTY` was based on the same standard would print a "$" when
+recieved).
+
+Some Teleprinters included a key or button with WRU (Who are You) or "Here Is"
+where WRU was typically printed on and a varient of the `E` key.  This was
+put on teleprinters as a way to find if the remote side was on and listening,
+and each machine could be "programmed" by removing tabs from a rotating drum.
+Manufacturers had either 20 or 22 characters of customizable response.
+The `ENQ` function ended up in ASCII since its 1963 introduction.
+
+When DEC started building Video Terminals (VT), the circuitry to respond to 
+`ENQ` was considered too slow, so this signal was ignored (VT05, VT50, etc),
+and the first DEC VT to respond to `ENQ` with a customizable string was the
+VT100 model.
+
+**Jumping to modern terminal emulators**, Simon Tatham's PuTTY has
+a programmable response to `ENQ`, which defaults to `PuTTY` out of the box.
+iTerm2 on macOS also has a programmable response, and its default is empty,
+just like a Teleprinter when shipped new.  The terminal `rxvt` also responds
+to `ENQ`, but not with a customizable response (more below).
+
+The first DEC Video Terminal, the VT05, did not have any feature or function
+that would auto-respond back to a host computer in any way.  However, just
+as Teleprinter manufactures of the early 20th century had figured out, this
+simple idea was important.  When they did introduce this idea into their
+next model, the VT50, instead of using `ENQ`, DEC instead did a 
+non-customizable per-model response to a two-character sequence, '\033Z`, 
+called *DECID*.  See [Observed Output](./Observed_Output.md) for specifics.
+
+The three character sequence, `\033[c`, *Device Attributes* (DA):  was added 
+by Digital Equipment Corp for its VT100 line of terminals.  This sequence is 
+fairly standard for *soft terminals*.  DEC terminals from the VT100 through 
+the VT102, still replied to `\033Z` *DECID*, but from the VT200 series on, 
+it would only respond to *DECID* if it were specifically in VT50 
+compatibilty mode.  The VT200 series introduced *Secondary DA*, and renamed
+Device Attributes to *Primary DA*.
+
+Every terminal emulator I have tested responds to *Primary DA* with a string
+that looks like a valid DEC *Primary DA* response.  The terminal emulator
+package `rxvt` responds to `ENQ` with its *Primary DA* response.
+
+## Term Read and `-t`
+
+My own testing has shown that it is harmless to send *Primary DA* and *ENQ* 
+in one string.  Doing this has the benefit of sniffing out PuTTY (which has 
+many quirks of its own), and `rxvt` which will essentially respond twice.
 
 # Actual Code Meanings
 
@@ -74,6 +139,8 @@ never to *primary DA* sequence, the return code starts with these two bytes
 ```
     \033[       # ESC + [
 ```
+
+See [Observed Output](./Observed_Output.md) for return codes.
 
 ## VT100 through VT125 Terminals
 
