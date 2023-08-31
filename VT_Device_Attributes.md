@@ -67,17 +67,17 @@ The \<Ps> is descibed as
 
 **VT5x DECID**
 
-VT50 -> VT52 responses found in 
+* VT50 -> VT52 responses found in 
 `DECscope User's Manual`, publication `EK-VT5X-OP-001` (March 1977)
 on page 22 (26 in PDF).
 
-    - https://vt100.net/dec/ek-vt5x-op-001.pdf
+    * https://vt100.net/dec/ek-vt5x-op-001.pdf
 
-- VT55 response found in the
+* VT55 response found in the
 `VT55-E, F, H, J DECgraphic Scope Users' Manual`,
 publication `EK-VT55E-TM-001` (1976) on page 5-19 (65 in PDF)
 
-- https://vt100.net/dec/ek-vt55e-tm-001.pdf
+    * https://vt100.net/dec/ek-vt55e-tm-001.pdf
 
 **VT100 in VT52 Compatible Mode**
 
