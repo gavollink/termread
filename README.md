@@ -16,6 +16,7 @@ have spent writing the code for this.*
 
 At least one action must be chosen
 
+| Opt | Desc |
 | --- | --- |
 | [-t](./Dash-t.md) | Ask for terminal identity. |
 | [-2](./Dash-2.md) | Ask for terminal version. |
@@ -25,6 +26,7 @@ At least one action must be chosen
 
 ### Options
 
+| Opt | Desc |
 | --- | --- |
 | !  | Ignore the TERM environment variable, treat as VT100 or newer  |
 | -d \<nnn> | Milliseconds to wait for the first character of a response |
@@ -38,6 +40,7 @@ change this.  Just call TermRead multiple times.
 
 ### About
 
+| Opt | Desc |
 | --- | --- |
 | -L | Print that license and exit |
 | -V | Print the version and exit |
@@ -45,6 +48,7 @@ change this.  Just call TermRead multiple times.
 
 ### Long Options
 
+| Short | Long |
 | --- | --- |
 | -t | --term    |
 | -2 | --term2   |
