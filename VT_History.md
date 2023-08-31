@@ -66,7 +66,8 @@ area in the middle of the screen without retyping the entire screen.
 The manual for the VT05 says in complies with
 `U.S. ASCII X3.15-1966`, which is a VERY early version
 of ASCII as it was still in flux during this time, so here are some
-outstanding characters this terminal uses that have non-ASCII meanings.
+outstanding characters this terminal uses that have
+meanings that do not comply with a modern ASCII definition.
 
 | Char | Action |
 |---|---|
@@ -93,28 +94,19 @@ to interpret the ESC ( `\033` ) as the start of instructions to be
 interpreted by the terminal instead of displayed directly to the user.
 It is my belief that this innovation is why DEC terminal codes
 have been supported in non-serial applications from DOS 2.0
-(ansi.sys) up through modern graphical systems,
+(ANSI.SYS) up through modern graphical systems,
 like Terminal.app in macOS.
 
 This line also introduced the idea of sending data back to the computer
 that didn't come from user input.  This came in the form of the
-DECID command ( `\033Z` ) which would respond with a terminal identifier,
-see table:
+DECID command ( `\033Z` ) which would respond with a terminal identifier.
+For response strings,
+see [VT Device Attributes](./VT_Device_Attributes.md).
 
-| Action | Code | Definition |
-|----|----|----|
-| Send    | `\033Z`  | DECID sequence |
-| Recieve | `\033/A` | VT50 response |
-| Recieve | `\033/H` | VT50H response |
-| Recieve | `\033/J` | VT50H w/ Copier response |
-| Recieve | `\033/K` | VT52 response |
-| Recieve | `\033/L` | VT52 w/ Copier response |
-| Recieve | `\033/C` | VT55 response (s1) |
-| Recieve | `\033/E` | VT55E and later response (s2) |
-| Recieve | `\033/Z` | xterm in VT52 emulation mode |
-
-The VT50 did not support lowercase characters, the backtick (\`),
-the braces ({/}), or the pipe (|), while the VT52 and later did.
+The VT50 and VT50H did not support lowercase characters,
+the backtick `` ` ``,
+the braces ` { } `,
+or the pipe ` | `, while the VT52 and later did.
 
 That makes the VT52 the earliest 'modern' terminal.  Software written
 for this terminal would have little issue talking with a modern
@@ -123,40 +115,25 @@ for this terminal would have little issue talking with a modern
 That said, its capabilities were very small in relation to the
 expectations of a modern user.
 
-NOTE: This table comes from
-(s1) https://vt100.net/dec/ek-vt5x-op-001.pdf page 22, and
-(s2) https://vt100.net/dec/ek-vt55e-tm-001.pdf page 5-19.
-
-The program xterm, under vt52 emulation, responds with `\033/Z`
-which is not "technically" correct, but there is a lot of places
-online  where that response is claimed as the actual response for
-a vt52 terminal, since neither of the Digital manuals agree, I'm
-confident in what I've written here.  THAT SAID, it is *possible*
-that later DEC terminal models running in vt52 compatability mode
-did respond to `DECID` with `\033/Z`.
-
 ## VT100 series
 
-August 1978, the VT100 was brought to market.  This series proved to be
-very successful and created a HUGE number of clones, making the VT100 the
-most emulated terminal in the world.  On any modern system, the capabilities
-of a VT100 are taken for granted.
+August 1978, the VT100 was brought to market.  This series proved to
+be very successful and created a HUGE number of clones, making the
+VT100 the most emulated terminal in the world.  On any modern system,
+most capabilities of a VT100 are taken for granted.
 
-The DECID command is still supported, but is deprecated in favor of
-the `Device Attributes` (DA) command: `\033[c`.
+In this series, the DECID command is still supported, but is deprecated
+in favor of the `Device Attributes` (DA) command: `\033[c`.
 
-Don't be fooled by the higher numbers,
-the VT101 and VT102 are reduced feature versions of the VT100.
-
-A VT100 series terminal's DA response starts with `\033[?1;` and
-ends with `c`.
+Don't be fooled by the higher numbers, the VT101 and VT102 are reduced
+cost and reduced feature versions of the VT100.
 
 ## VT200 series
 
 Starting with the VT 220, the `Secondary Device Attributes` or `Secondary DA`
 command was introduced: `\033[>c`
 
-This has been embraced by most emulators (even ones that only claim vt100
+This has been embraced by most emulators (even ones that only claim VT100
 capabilites).  With the advent of `Secondary DA` the original `DA` is 
 referred to as `Primary DA`.
 
@@ -167,14 +144,14 @@ ends with `c`.
 
 | Series | Starts      |
 |--------|-------------|
-| vt100  | `\033[?1;`  |
-| vt200  | `\033[?62;` |
-| vt300  | `\033[?63;` |
-| vt400  | `\033[?64;` |
-| vt500  | `\033[?65;` |
+| VT100  | `\033[?1;`  |
+| VT200  | `\033[?62;` |
+| VT300  | `\033[?63;` |
+| VT400  | `\033[?64;` |
+| VT500  | `\033[?65;` |
 
-From vt100 and higher, the DECID string is deprecated, but still present.
-From vt200 and higher, the DECID string ONLY responds if the hard
+From VT100 and higher, the DECID string is deprecated, but still present.
+From VT200 and higher, the DECID string ONLY responds if the hard
 terminal is running in VT52 or VT100 emulation modes.
 
 ## Primary DA and other terminals
