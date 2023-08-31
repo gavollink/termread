@@ -102,7 +102,7 @@ control character called `ENQ` (the US variant, called `US TTY` was
 based on the same standard but would print a "$" when recieved).
 
 Some Teleprinter equipment included a key or button with
-`WRU` (Who are You) or `Here Is` where `WRU` was typically printed on
+`WRU` (Who are You) or `Here Is` [^1] where `WRU` was typically printed on
 the `E` key.  When recieved, the device would automatically send back
 a response, as a way for a remote to know a reciever was on and
 listening, and each machine could be "programmed" by removing tabs
@@ -121,3 +121,4 @@ or computer terminals became common in the 1970s.
 The last manufactured Teletype machines were manufactured in the
 early 1980s.
 
+[^1] [Model 28 Article](https://kb8ojh.net/station/teletype)
