@@ -130,29 +130,12 @@ cost and reduced feature versions of the VT100.
 
 ## VT200 series
 
-Starting with the VT 220, the `Secondary Device Attributes` or `Secondary DA`
-command was introduced: `\033[>c`
+Starting with the VT 220, the `Secondary Device Attributes`
+or `Secondary DA` command was introduced: `\033[>c`
 
 This has been embraced by most emulators (even ones that only claim VT100
 capabilites).  With the advent of `Secondary DA` the original `DA` is 
 referred to as `Primary DA`.
-
-A VT200 series terminal's DA response starts with `\033[?62;` and
-ends with `c`.
-
-## DEC Terminal Primary DA responses...
-
-| Series | Starts      |
-|--------|-------------|
-| VT100  | `\033[?1;`  |
-| VT200  | `\033[?62;` |
-| VT300  | `\033[?63;` |
-| VT400  | `\033[?64;` |
-| VT500  | `\033[?65;` |
-
-From VT100 and higher, the DECID string is deprecated, but still present.
-From VT200 and higher, the DECID string ONLY responds if the hard
-terminal is running in VT52 or VT100 emulation modes.
 
 ## Primary DA and other terminals
 
