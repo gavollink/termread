@@ -1158,19 +1158,19 @@ doprint( int opts, FILE *fh, char* out )
                         if ( isxdigit( out[cx+3] ) ) {
                             buildval = 16 * hextobin( out[cx+2] );
 #ifdef DEBUG
-    fprintf( stderr, "HEX BUILD pos 1: '%c', Now: %d \\x%02x \\0%03o\n",
+    DEBUGOUT( "HEX BUILD pos 1: '%c', Now: %d \\x%02x \\0%03o\n",
             out[cx+2], buildval, buildval, buildval );
 #endif
                             buildval = buildval + hextobin( out[cx+3] );
 #ifdef DEBUG
-    fprintf( stderr, "HEX BUILD pos 2: '%c', Final: %d \\x%02x \\0%03o\n",
+    DEBUGOUT( "HEX BUILD pos 2: '%c', Final: %d \\x%02x \\0%03o\n",
             out[cx+2], buildval, buildval, buildval );
 #endif
                             cx = cx + 3;
                         } else {
                             buildval = hextobin( out[cx+2] );
 #ifdef DEBUG
-    fprintf( stderr, "HEX BUILD pos 1: '%c', Final: %d \\x%02x \\0%03o\n",
+    DEBUGOUT( "HEX BUILD pos 1: '%c', Final: %d \\x%02x \\0%03o\n",
             out[cx+2], buildval, buildval, buildval );
 #endif
                             cx = cx + 2;
