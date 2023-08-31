@@ -16,6 +16,7 @@ have spent writing the code for this.*
 
 At least one action must be chosen
 
+| --- | --- |
 | [-t](./Dash-t.md) | Ask for terminal identity. |
 | [-2](./Dash-2.md) | Ask for terminal version. |
 | [-b](./Dash-b.md) | Ask terminal to respond with background color. |
@@ -24,6 +25,7 @@ At least one action must be chosen
 
 ### Options
 
+| --- | --- |
 | !  | Ignore the TERM environment variable, treat as VT100 or newer  |
 | -d \<nnn> | Milliseconds to wait for the first character of a response |
 | --var \<name> | Variable name for shell readable output. `*` |
@@ -36,12 +38,14 @@ change this.  Just call TermRead multiple times.
 
 ### About
 
+| --- | --- |
 | -L | Print that license and exit |
 | -V | Print the version and exit |
 | -h | Print some help and exit |
 
 ### Long Options
 
+| --- | --- |
 | -t | --term    |
 | -2 | --term2   |
 | -b | --bg , --background |
