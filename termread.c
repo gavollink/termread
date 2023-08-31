@@ -87,7 +87,7 @@ const char xt_colorbg[] = "\033]11;?\033\\";
 const char xt_colorreq[] = "\033]4;%d;?\007";
 const char xt_eraseline[] = "\033[9D\033[2K";
 
-#define DEBUG(str, ... ) if ( opt.debug ) \
+#define DEBUGOUT(str, ... ) if ( opt.debug ) \
     { \
         char *b = calloc(1024, 1); \
         sprintf( b, "# DEBUG: %s", str );\
@@ -675,12 +675,12 @@ args( int argc, char *argv[] )
         {
             opt.wanthelp = 1;
             action_requested++;
-            DEBUG("--help ACTION requested.\n", NULL);
+            DEBUGOUT("--help ACTION requested.\n", NULL);
         }
         else if ( 0 == strcmp("!", argv[cx] ) ) {
             opt.ignoreterm = 1;
             opt.envterm = "xterm";
-            DEBUG("! forcing TERM actions for [%s]\n", opt.envterm);
+            DEBUGOUT("! forcing TERM actions for [%s]\n", opt.envterm);
         }
         else if (
             (      ( ( strlen("-b") <= strlen(argv[cx]) )
@@ -695,7 +695,7 @@ args( int argc, char *argv[] )
         {
             opt.background = 1;
             action_requested++;
-            DEBUG("--bg ACTION requested.\n", NULL);
+            DEBUGOUT("--bg ACTION requested.\n", NULL);
         }
         else if (
             (      ( ( strlen("-t") <= strlen(argv[cx]) )
@@ -707,7 +707,7 @@ args( int argc, char *argv[] )
         {
             opt.termname = 1;
             action_requested++;
-            DEBUG("--term ACTION requested.\n", NULL);
+            DEBUGOUT("--term ACTION requested.\n", NULL);
         }
         else if (
             (      ( ( strlen("-2") <= strlen(argv[cx]) )
@@ -719,7 +719,7 @@ args( int argc, char *argv[] )
         {
             opt.term2da = 1;
             action_requested++;
-            DEBUG("--term2 ACTION requested.\n", NULL);
+            DEBUGOUT("--term2 ACTION requested.\n", NULL);
         }
         else if (
             (      ( ( strlen("-s") <= strlen(argv[cx]) )
@@ -733,7 +733,7 @@ args( int argc, char *argv[] )
             ) )
         {
             opt.wantstat = 1;
-            DEBUG("--stats requested.\n", NULL);
+            DEBUGOUT("--stats requested.\n", NULL);
         }
         else if (
             (      ( ( strlen("-p") <= strlen(argv[cx]) )
@@ -750,7 +750,7 @@ args( int argc, char *argv[] )
                 opt.print = 1;
                 opt.custom_print = argv[1 + cx];
                 cx++;
-                DEBUG("--printf [%s] ACTION requested.\n", opt.custom_print);
+                DEBUGOUT("--printf [%s] ACTION requested.\n", opt.custom_print);
             } else {
                 fprintf(stderr,
                     "Unable to read string after option '%s'\n",
@@ -782,7 +782,7 @@ args( int argc, char *argv[] )
                     opt.getcolor = 1;
                     opt.color_num = getcolor;
                     cx++;
-                    DEBUG("--color [%i] ACTION requested.\n", opt.color_num);
+                    DEBUGOUT("--color [%i] ACTION requested.\n", opt.color_num);
                 }
             }
             if ( ! gc_ok ) {
@@ -816,7 +816,7 @@ args( int argc, char *argv[] )
                         opt.needhelp = 1;
                     } else {
                         opt.delay = getdelay;
-                        DEBUG("--delay [%li].\n", opt.delay);
+                        DEBUGOUT("--delay [%li].\n", opt.delay);
                     }
                     cx++;
                     gd_ok = 1; /* Even if not, error already handled! */
@@ -836,7 +836,7 @@ args( int argc, char *argv[] )
         {
             if ( is_next( argc, cx ) ) {
                 opt.var = argv[++cx];
-                DEBUG("--var OVERRIDE [%s].\n", opt.var);
+                DEBUGOUT("--var OVERRIDE [%s].\n", opt.var);
             } else {
                 fprintf(stderr,
                     "Unable to read outvar after option '%s'\n",
@@ -855,7 +855,7 @@ args( int argc, char *argv[] )
             if ( is_next( argc, cx ) ) {
                 cx++;
                 opt.term = argv[cx];
-                DEBUG("OPEN OVERRIDE [%s] (probably won't work).\n", opt.term);
+                DEBUGOUT("OPEN OVERRIDE [%s] (probably won't work).\n", opt.term);
             } else {
                 fprintf(stderr,
                     "Unable to read output term after option '%s'\n",
@@ -874,7 +874,7 @@ args( int argc, char *argv[] )
         {
             opt.wantlicense = 1;
             action_requested++;
-            DEBUG("--version ACTION requested.\n", NULL);
+            DEBUGOUT("--version ACTION requested.\n", NULL);
         }
         else if (
             (      ( ( strlen("-V") == strlen(argv[cx]) )
@@ -887,7 +887,7 @@ args( int argc, char *argv[] )
         {
             opt.wantversion = 1;
             action_requested++;
-            DEBUG("--version ACTION requested.\n", NULL);
+            DEBUGOUT("--version ACTION requested.\n", NULL);
         }
         else if (
             (      ( ( strlen("-v") <= strlen(argv[cx]) )
@@ -899,14 +899,14 @@ args( int argc, char *argv[] )
             ) )
         {
             opt.debug = 1;
-            DEBUG("--verbose DEBUGGING ON.\n", NULL);
+            DEBUGOUT("--verbose DEBUGGING ON.\n", NULL);
         }
         else if ( ( strlen("--erase") == strlen(argv[cx]) )
                   && ( 0 == strcmp("--erase", argv[cx] ) ) )
         {
             opt.justerase = 1;
             action_requested++;
-            DEBUG("--erase ACTION (exclusive) ON.\n", NULL);
+            DEBUGOUT("--erase ACTION (exclusive) ON.\n", NULL);
         } else {
             fprintf( stderr, "Unknown option %d: [%s]\n", cx, argv[cx] );
             opt.needhelp = 1;
@@ -915,7 +915,7 @@ args( int argc, char *argv[] )
     if ( NULL == opt.envterm )
     {
         opt.envterm = "xterm";
-        DEBUG("TERM empty, forcing actions for [%s]\n", opt.envterm);
+        DEBUGOUT("TERM empty, forcing actions for [%s]\n", opt.envterm);
     }
     if ( opt.needhelp || opt.wanthelp || opt.wantversion || opt.wantlicense ) {
         // SIDE EFFECT -- NO DEBUG WARNING ABOUT --var BELOW.
@@ -924,7 +924,7 @@ args( int argc, char *argv[] )
     /* Set default delay */
     if ( 0 == opt.delay ) {
         opt.delay = 500;      /* ~ 500 milliseconds or 0.5 seconds */
-        DEBUG("--delay defaulting to [%li]\n", opt.delay);
+        DEBUGOUT("--delay defaulting to [%li]\n", opt.delay);
     }
     /* Warn about no action */
     if ( 0 == action_requested ) {
@@ -937,20 +937,20 @@ args( int argc, char *argv[] )
             )
     {
         if ( opt.termname ) {
-            DEBUG("--var [%s] will only be used for --term\n", opt.var );
+            DEBUGOUT("--var [%s] will only be used for --term\n", opt.var );
         }
         else if ( opt.term2da ) {
-            DEBUG("--var [%s] will only be used for --term2\n", opt.var );
+            DEBUGOUT("--var [%s] will only be used for --term2\n", opt.var );
         }
         else if ( opt.getcolor ) {
-            DEBUG("--var [%s] will only be used for --color\n", opt.var );
+            DEBUGOUT("--var [%s] will only be used for --color\n", opt.var );
         }
         else if ( opt.background ) {
-            DEBUG("--var [%s] will only be used for --bg %i\n", opt.var,
+            DEBUGOUT("--var [%s] will only be used for --bg %i\n", opt.var,
                     opt.color_num );
         }
         else if ( opt.print ) {
-            DEBUG("--var [%s] will only be used for --printf\n", opt.var );
+            DEBUGOUT("--var [%s] will only be used for --printf\n", opt.var );
         }
     }
     return 1;
@@ -1252,7 +1252,7 @@ term_write()
         opt.termname = 0;
         if ( NULL == opt.var ) {
             opt.var = termname_var;
-            DEBUG("Set default --term var to %s\n", opt.var );
+            DEBUGOUT("Set default --term var to %s\n", opt.var );
         }
 
         if ( 0 == is_vtxx( opt.envterm ) ) {
@@ -1273,7 +1273,7 @@ term_write()
         opt.term2da = 0;
         if ( NULL == opt.var ) {
             opt.var = term2da_var;
-            DEBUG("Set default --term2 var to %s\n", opt.var );
+            DEBUGOUT("Set default --term2 var to %s\n", opt.var );
         }
 
         if ( 0 == is_vtxxx( opt.envterm ) ) {
@@ -1293,7 +1293,7 @@ term_write()
         opt.getcolor = 0;
         if ( NULL == opt.var ) {
             opt.var = getcolor_var;
-            DEBUG("Set default --color var to %s\n", opt.var );
+            DEBUGOUT("Set default --color var to %s\n", opt.var );
         }
 
         if ( 0 == is_vtxxx( opt.envterm ) ) {
@@ -1313,7 +1313,7 @@ term_write()
         opt.background = 0;
         if ( NULL == opt.var ) {
             opt.var = background_var;
-            DEBUG("Set default --bg var to %s\n", opt.var );
+            DEBUGOUT("Set default --bg var to %s\n", opt.var );
         }
 
         if ( 0 == is_vtxxx( opt.envterm ) ) {
@@ -1333,7 +1333,7 @@ term_write()
         opt.print = 0;
         if ( NULL == opt.var ) {
             opt.var = print_var;
-            DEBUG("Set default --printf var to %s\n", opt.var );
+            DEBUGOUT("Set default --printf var to %s\n", opt.var );
         }
         doprint( INTERPRET_ESC | NO_NEWLINE, fh, opt.custom_print );
     }
