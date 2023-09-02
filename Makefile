@@ -43,7 +43,7 @@ endif
 $(FINAL): $(INTERIM).$(FINAL)
 	cp $(INTERIM).$(FINAL) $(FINAL)
 
-universal.$(FINAL): x86_64.$(FINAL) arch64.$(FINAL)
+universal.$(FINAL): x86_64.$(FINAL) arm64.$(FINAL)
 	lipo -create -output universal.$(FINAL) x86_64.$(FINAL) arm64.$(FINAL)
 
 x86_64.$(FINAL): $(SOURCE) $(X_DEPS)
