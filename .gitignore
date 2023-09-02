@@ -1,0 +1,4 @@
+termread
+termread.o
+*.termread
+*.swp

@@ -14,6 +14,15 @@
  *
  */
 #define VERSION "1.13"
+#define C_YEARS "2023"
+#define IDENT "termread"
+#define WEBHOME "https://gitlab.home.vollink.com/external/termread/"
+#define AT "@"
+#define DOT "."
+#define AUTHOR1 "Gary Allen Vollink"
+#define CONTACT1 "gary" AT "vollink" DOT "com"
+#define AUTHORS "   " AUTHOR1 " <" CONTACT1 ">\n"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -99,7 +108,6 @@ void
 prinversion(void)
 {
     FILE *out = stderr;
-    fprintf(out, "\n");
     fprintf(out, "%s Version: %s\n",
                  opt.argv0, VERSION );
 
@@ -113,14 +121,12 @@ prinusage(void)
     if ( opt.wanthelp ) {
         out = stdout;
     }
-    fprintf(out, "\n");
     fprintf(out,
             "%s [!] [-t] [-2] [-b] [-p] [-c <nnn>] [-d <nnnn>] [-s] [-v]\n",
            opt.argv0 );
     fprintf(out, "    OR\n");
     fprintf(out, "%s --help | --version | --license\n",
                  opt.argv0 );
-    fprintf(out, "\n");
 
     return;
 }
@@ -645,7 +651,10 @@ prinhelp(void)
     fprintf(out, "%s", about);
     if ( opt.wanthelp ) {
         fprintf(out, "\n");
-        fprintf(out, "Effective TERM='%s'\n", opt.envterm);
+        if ( 0 != strcmp( getenv("TERM"), opt.envterm ) ) {
+            fprintf(out, "  Effective TERM='%s'\n", opt.envterm);
+        }
+        fprintf(out, "Environment TERM='%s'\n", getenv("TERM") );
     }
 
     return;
@@ -1542,12 +1551,13 @@ main( int argc, char *argv[] )
 void
 printlicense()
 {
-    printf("\n\
+    puts("\n\
 MIT License\n\
 \n\
-TermRead v %s https://gitlab.home.vollink.com/external/termread/\n\
-Copyright (c) 2023, Gary Allen Vollink\n\
-\n\
+" IDENT " v " VERSION " -- " WEBHOME "\n\
+Copyright (c) " C_YEARS ", by:\n\
+" AUTHORS
+"\n\
 Permission is hereby granted, free of charge, to any person obtaining\n\
 a copy of this software and associated documentation files\n\
 (the \"Software\"), to deal in the Software without restriction,\n\
@@ -1565,6 +1575,6 @@ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.\n\
 IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY\n\
 CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,\n\
 TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE\n\
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n\n", VERSION);
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n");
 }
 /* EOF termread.c */
