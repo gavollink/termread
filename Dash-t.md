@@ -37,8 +37,10 @@ essentially respond twice.
 
 ## Sends
 
-| DECID | `\033Z` | ESC Z |
-| Primary DA | `\033[c\005` | CSI c ENQ |
+| DEC Name   | Sequence     | As shown in docs |
+| :-----     |  ----        | -----            |
+| DECID      |  `\033Z`     | ESC Z            |
+| Primary DA | `\033[c\005` | CSI c ENQ        |
 
 ## Returns
 
