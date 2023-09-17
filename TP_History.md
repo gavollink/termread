@@ -110,7 +110,7 @@ from a rotating drum.  Manufacturers supporting this feature had
 either 20 or 22 characters of customizable response.
 The `ENQ` function was included in ASCII since its 1963 introduction.
 
-Even ASCII was only a US standard, and while common was not capable
+Even ASCII was only a US standard, and while common, it was not capable
 of printing European alphabets.
 
 # End of Line
@@ -121,4 +121,4 @@ or computer terminals became common in the 1970s.
 The last manufactured Teletype machines were manufactured in the
 early 1980s.
 
-[^1] [Model 28 Article](https://kb8ojh.net/station/teletype)
+[^1] [Model 28 Article on kb8ojh.net](https://kb8ojh.net/station/teletype)

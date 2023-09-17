@@ -103,48 +103,61 @@ I have tested react to **termread**.
 # Why
 
 In these modern times, every text interface to a computer, responds
-to escape codes invented by Digital Equipment Corporation *DEC* for
-their Video Terminal line of terminals, starting with the basics set
-up for the VT50 line of terminals.
+to some subset of the escape codes specified in ANSI X3.64-1979,
+which were first used by Digital Equipment Corporation *DEC* for their
+Video Terminal *VT* line of terminals, starting with the VT100,
+released 1978 (before the standard had been finalized).  While there
+were MANY other types of terminals, later, **DEC**'s early adoption of
+the ANSI escape codes, (as well as cost advantages that I won't get into
+here) gave them a lead in general develer acceptance.
 
-When the American National Standards Institute looked to standardize
-control codes, they chose codes that were a subset of the controls
-for the DEC VT100 terminal.  This was even available in MS-DOS 5.0 by
-loading ANSI.SYS.
+It is important to note here that the ANSI X3.64 escape sequence standard
+explicitly states that there is NO expectation that any implementation
+attempt to implement all of the specified features.
+The DEC VT100 implemented many of these features, but not all of them.
+Another sub-set of the ANSI Escape Sequence standard was even available
+in MS-DOS 2.0 (1983) and more recent by loading ANSI.SYS at boot, which
+would later be used by BBS dial-up software to support ASCII art.
 
 The first UNIX graphical emulation of a terminal under 
 the `X windows` system, xterm, carefully emulates a DEC VT terminal
-(the exact emulated model has changed over the years).
+(the exact emulated model has changed over the years), though it has
+always been able to even emulate a pre-ANSI VT52 terminal (1974),
+that had proprietary control sequences.
 
-These days, almost every software defined terminal sets
-the default TERM environment variable to '**xterm**'.
+## The Actual Problem
+
+Background covered, these days, almost every software defined terminal
+sets the default TERM environment variable to '**xterm**'.
 That also means that the default terminfo entry for xterm, as shipped
 by most vendors is, itself, a simplified entry, catering to the
-lowest common denominator terminal features.
+lowest common denominator terminal features that all terminal
+emulators are likely to support.
 
-Thing is, with the exception of default starts of X11, I don't
-actually use 'xterm' and the actual terminal I'm using may
-have a better terminfo definition on the system that I'm attached to,
-and might support colors, even though `xterm` might not say so.
+Because the `xterm` entry is often a lowest common denominator catch-all,
+there is probably a more complete terminal definition for whatever
+terminal emulator I am using (even xterm itself).
 
-There is a shell built-in called 'read' that can do what this does,
-but it only works for me on `bash` and only on some systems I
-regularly interact with.  Yet, all of these systems can compile this
-simple code.
-
-I find it useful to be able to query the terminal I'm on to try to
-figure out what it actually is in the beginning of my startup
-files (.profile).  I will then reset TERM to the best available
-matching terminfo entry available on that system.
+To help my login start-up files figure out which terminal emulator
+I'm using, I started to send three identity queries to the terminal.
+There is a bash shell built-in called 'read' that can do what this does,
+but it only works for me on some systems I regularly interact with.  Yet,
+all of these systems can compile the simple termread code.
 
 Between `-t` and `-2`, I usually have enough info that I know which
 terminal program I happen to be using (or close enough).
+Once I've figured out which terminal emulator the session is actually
+connected to, I can then reset the TERM environment variable to the best
+available matching terminfo entry available on that system.
 
-## Support for TERM=
+(Even if it falls back to xterm anyway).
+
+## Support for various TERM=
 
 There's a helper program in here that creates C-Functions that are
-just long lists of terminals sorted by the terminfo entry for
-`user 9`.  Of these, I use the two lists that cover terminals that
+just long lists of terminals sorted by the terminfo entry
+`user 9` (this is where the primary identity string resides).
+Of these, I use the two lists that cover terminals that
 only respond to *DECID*, and those that respond to *Primary DA*.
 
 That itself is run on a system with the latest terminfo database
@@ -152,17 +165,16 @@ that ncurses has to offer, and even so, I've added a few entries
 on top of each.
 
 NOTE:
-The first year + of this software, it did not support VT50/52/55/62,
+The first year + of this software, it did not support VT52/55/62,
 as these require `DECID` send instead of `Primary DA` which all
 modern terminals support.
 
 However, adding this support was fairly trivial, so I finally made
 the change...
 
-Basically, if TERM is set to any of these four;
-"vt50", "vt52", "vt55", or "vt62", the program will send a `DECID`
-request for action `-t` and will print an error on `-2`, `-b`,
-or `-c`.
+Basically, if TERM is set to any of the terminal definitions descended
+from the "vt52 the program will send a `DECID` request for action `-t`
+and will print an error on `-2`, `-b`, or `-c`.
 
 ### Actual DECID
 
@@ -174,7 +186,7 @@ in that case alone, the terminal type will ONLY be returned from a
 `DECID` sequence where a `Primary DA` sequence will be ignored.
 
 Useful to note that `xterm` can *also* be started in *Tektronix* modes
-which wouldn't be compatible with this at all.
+which wouldn't be compatible with this at all, either.
 
 I have never encountered a program that only talks *Tektronix*, so I've
 never considered trying to add such support here.
