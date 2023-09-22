@@ -21,6 +21,8 @@ been a mistake.
 | Terminal.app | `\033[?1;2c` | `\033[>1;95;0c` | YES | YES | Catalina 10.x |
 | Terminal.app | `\033[?1;2c` | `\033[>1;95;0c` | YES | YES | Big Sur 11.x |
 | Terminal.app | `\033[?1;2c` | `\033[>1;95;0c` | YES | YES | Ventura 13.x |
+| KiTTY.app    | `\033[?62;c` | `\033[>1;4000;30c` | YES | YES | 0.30.0 |
+| iTerm2.app   | `\033[?62;4c` | `\033[>0;95;0c` | YES | YES | 3.4.20 |
 
 # Windows
 
@@ -29,15 +31,13 @@ the default Windows Console Host and Windows Terminal as
 Windows Terminal can display Emoji and has a larger set
 of capabilities.
 
-| Terminal | -t | -2 | -bg | -c1 | Version Info |
-|----------|----|----|-----|-----|--------------|
-| Win10 cmd        | `\033[?1c` | `\033[>0;10;1c` | nil | nil | Win 10 or 11 |
-| Windows Terminal | `\033[?1c` | `\033[>0;10;1c` | nil | nil | 1.11.2921.0 |
-| PuTTY      | `\033[?6cPuTTY` | `\033[>0;136;0c` | nil | nil | 0.70 -> 0.76 |
+| Terminal             |  -t             |  -2           | -bg  |  -c1 | Version Info |
+| ----------           | ----            | ----          |----- | -----|--------------|
+| Windows Console Host | `\033[?1c`      | `\033[>0;10;1c` | nil | nil | Win 10 or 11 |
+| Windows Terminal     | `\033[?1c`      | `\033[>0;10;1c` | nil | nil | 1.11.2921.0 |
+| PuTTY                | `\033[?6cPuTTY` | `\033[>0;136;0c` | nil | nil | 0.70 -> 0.76 |
 
 # Not-Observed But Expected Outputs
-
-vt50/52 outputs from https://vt100.net/dec/ek-vt5x-op-001.pdf (page 22).
 
 | Terminal | -t | -2 | -bg | -c1 | Version Info | NOTES |
 |----------|----|----|-----|-----|--------------|-------|
@@ -47,3 +47,5 @@ vt50/52 outputs from https://vt100.net/dec/ek-vt5x-op-001.pdf (page 22).
 | vt52     | `\033K` | nil | nil | nil | DECscope vt52 Ax (or Cx) | 24 Lines x 80 Cols |
 | vt52b    | `\033L` | nil | nil | nil | DECscope vt52 Bx (with copier) | 24 Lines x 80 Cols |
 | vt55     | `\033E` | nil | nil | nil | DECscope vt55 | 24 Lines x 80 Cols |
+
+vt50/52 outputs from https://vt100.net/dec/ek-vt5x-op-001.pdf (page 22).
