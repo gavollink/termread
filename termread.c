@@ -13,7 +13,7 @@
  * LICENSE: Embedded at bottom...
  *
  */
-#define VERSION "1.13"
+#define VERSION "1.14"
 #define C_YEARS "2023"
 #define IDENT "termread"
 #define WEBHOME "https://gitlab.home.vollink.com/external/termread/"
@@ -48,6 +48,7 @@ struct sopt {
     int getcolor;   /* VT100 color query */
     int termname;   /* VT* terminal caps query */
     int term2da;
+    int term3da;
     int print;
     int justerase;  /* VT* terminal current line erase sequence */
     int ignoreterm; /* Ignore $TERM */
@@ -71,6 +72,7 @@ struct sopt {
 char background_var[] = "TERM_BG";
 char termname_var[] = "TERMID";
 char term2da_var[] = "TERM2DA";
+char term3da_var[] = "TERM3DA";
 char getcolor_var[] = "COLOR";
 char print_var[] = "READ";
 char default_var[] = "OUT";
@@ -92,6 +94,7 @@ const char xt_termreq[] = "\033[c\005";
 // Note that many modern vt100 descendence (including xterm)
 // respond to this anyway.
 const char xt_term2da[] = "\033[>c";
+const char xt_term3da[] = "\033[=c";
 const char xt_colorbg[] = "\033]11;?\033\\";
 const char xt_colorreq[] = "\033]4;%d;?\007";
 const char xt_eraseline[] = "\033[9D\033[2K";
@@ -122,7 +125,7 @@ prinusage(void)
         out = stdout;
     }
     fprintf(out,
-            "%s [!] [-t] [-2] [-b] [-p] [-c <nnn>] [-d <nnnn>] [-s] [-v]\n",
+            "%s [!] [-t] [-2] [-3] [-b] [-p] [-c <nnn>] [-d <nnnn>] [-s] [-v]\n",
            opt.argv0 );
     fprintf(out, "    OR\n");
     fprintf(out, "%s --help | --version | --license\n",
@@ -573,6 +576,9 @@ prinhelp(void)
     -2\n\
     --term2     Ask for terminal ident 'secondary DA'\n\
 \n\
+    -3\n\
+    --term3     Ask for terminal ident 'tertiary DA'\n\
+\n\
     -b\n\
     --bg        Ask for terminal background color\n\
 \n\
@@ -729,6 +735,18 @@ args( int argc, char *argv[] )
             opt.term2da = 1;
             action_requested++;
             DEBUGOUT("--term2 ACTION requested.\n", NULL);
+        }
+        else if (
+            (      ( ( strlen("-3") <= strlen(argv[cx]) )
+                && ( 0 == strcmp("-3", argv[cx]) ) )
+            ) || (
+                   ( ( strlen("--term3") <= strlen(argv[cx]) )
+                && ( 0 == strcmp("--term3", argv[cx]) ) )
+            ) )
+        {
+            opt.term3da = 1;
+            action_requested++;
+            DEBUGOUT("--term3 ACTION requested.\n", NULL);
         }
         else if (
             (      ( ( strlen("-s") <= strlen(argv[cx]) )
@@ -950,6 +968,9 @@ args( int argc, char *argv[] )
         }
         else if ( opt.term2da ) {
             DEBUGOUT("--var [%s] will only be used for --term2\n", opt.var );
+        }
+        else if ( opt.term3da ) {
+            DEBUGOUT("--var [%s] will only be used for --term3\n", opt.var );
         }
         else if ( opt.getcolor ) {
             DEBUGOUT("--var [%s] will only be used for --color\n", opt.var );
@@ -1298,6 +1319,26 @@ term_write()
             }
         }
     }
+    else if ( 1 == opt.term3da ) {
+        opt.term3da = 0;
+        if ( NULL == opt.var ) {
+            opt.var = term3da_var;
+            DEBUGOUT("Set default --term2 var to %s\n", opt.var );
+        }
+
+        if ( 0 == is_vtxxx( opt.envterm ) ) {
+            ret = fprintf(fh, xt_term3da);
+            fflush( fh );
+        } else {
+            fprintf( stderr,
+                "# Current effective TERM='%s', does not support --term3\n",
+                 opt.envterm);
+            if ( 0 == is_vtxx( opt.envterm ) ) {
+                fprintf( stderr, "# This term in a descendent of vt50, but 'Tertiary DA'\n" );
+                fprintf( stderr, "# is a feature of 'vt510', 'xterm' and descendents.\n" );
+            }
+        }
+    }
     else if ( 1 == opt.getcolor ) {
         opt.getcolor = 0;
         if ( NULL == opt.var ) {
@@ -1481,6 +1522,7 @@ do_term()
             + opt.background
             + opt.getcolor
             + opt.term2da
+            + opt.term3da
             + opt.print )
     {
         term_write();

@@ -49,3 +49,13 @@ of capabilities.
 | vt55     | `\033E` | nil | nil | nil | DECscope vt55 | 24 Lines x 80 Cols |
 
 vt50/52 outputs from https://vt100.net/dec/ek-vt5x-op-001.pdf (page 22).
+
+# Tertiary DA (WIP)
+
+Eventually this will show up in the tables above, but for now I'm
+just grabbing the info.
+
+| Terminal            | -3                     |
+| ------------------- | ---------------------  |
+| Windows Terminal    | `\033P!|00000000\033\` |
+

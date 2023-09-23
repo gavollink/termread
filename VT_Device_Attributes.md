@@ -89,7 +89,7 @@ feature codes in ascending order, separated by semicolons ` ; `.
 
 **VT5x DECID**
 
-* VT50 -> VT52 responses found in 
+* VT50 -> VT52 responses found in
 `DECscope User's Manual`, publication `EK-VT5X-OP-001` (March 1977)
 on page 22 (26 in PDF).
 

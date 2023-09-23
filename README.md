@@ -18,8 +18,9 @@ At least one action must be chosen
 
 | Opt | Desc |
 | --- | --- |
-| [-t](./Dash-t.md) | Ask for terminal identity. |
+| [-t](./Dash-t.md) | Ask for terminal identity/attributes. |
 | [-2](./Dash-2.md) | Ask for terminal version. |
+| -3                | Ask for terminal unique ID. |
 | [-b](./Dash-b.md) | Ask terminal to respond with background color. |
 | -c \<nnn> | Ask terminal for the color represented by supplied number |
 | [-p \<str>](./Dash-p.md) | Send the terminal custom text |
@@ -52,6 +53,7 @@ change this.  Just call TermRead multiple times.
 | --- | --- |
 | -t | --term    |
 | -2 | --term2   |
+| -3 | --term3   |
 | -b | --bg , --background |
 | -c | --color   |
 | -p | --printf , --print |
