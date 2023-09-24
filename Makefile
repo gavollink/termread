@@ -75,8 +75,8 @@ install: $(FINAL)
 		echo "TRY: $$ make INSTALLDIR=<path> install" ; \
 		false; \
 	elif [ -d "$(INSTALLDIR)" ]; then \
-		echo "install -m 775 -C $(FINAL) $(HOME)/sbin"; \
-		install -m 775 -C $(FINAL) $(HOME)/sbin; \
+		echo "install -m 775 -C $(FINAL) $(INSTALLDIR)"; \
+		install -m 775 -C $(FINAL) $(INSTALLDIR); \
 	else \
 		echo "Cannot install, 'INSTALLDIR=$(INSTALLDIR)', does not exist." ; \
 		false ;\
