@@ -20,7 +20,7 @@ At least one action must be chosen
 | --- | --- |
 | [-t](./Dash-t.md) | Ask for terminal identity/attributes. |
 | [-2](./Dash-2.md) | Ask for terminal version. |
-| -3                | Ask for terminal unique ID. |
+| [-3](./Dash-3.md) | Ask for terminal unique ID. |
 | [-b](./Dash-b.md) | Ask terminal to respond with background color. |
 | -c \<nnn> | Ask terminal for the color represented by supplied number |
 | [-p \<str>](./Dash-p.md) | Send the terminal custom text |

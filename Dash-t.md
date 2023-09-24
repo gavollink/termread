@@ -1,9 +1,12 @@
 # termread -t
 
-Request Terminal ID (primary DA)
+Request Terminal ID (primary Device Attributes)
+
+This was introduced with the VT100 series.
+Every terminal emulator I've tested responds to this.
 
 Sends two control strings to the terminal, and recieves back identifying
-information (sometimes).
+information.
 
 Returns whatever is returned (octal escaping control characters) in a
 bourne shell compatible variable string in the format:
@@ -129,35 +132,37 @@ Any subsequent positions describe the options available for that terminal.
 Subsequent positions, separated by semicolon (;), are output in
 numeric order and each number always has the same meaning.
 
-### VT Option codes
+### VT200 and More Recent Option Codes
 
 | Availility | Option Number | Definition |
 |----|----|----|
 | from 220   | `1` | 132 columns |
-| from 220   | `2` | printer port |
+| from 220   | `2` | Printer port |
 | 240 .. 340 | `3` | ReGIS graphics |
-| 240 .. 382 | `4` | Sixel graphics |
-| from 220   | `6` | selective erase |
-| VT550 (note) | `7` | DRCS |
+| 240 .. 382 | `4` | sixel graphics I/O |
+| from 220   | `6` | Selective erase |
+| from 300   | `7` | DRCS |
 | from 220   | `8` | UDK (User Defined Keys) |
 | from 220   | `9` | 7-bit national replacement characters avail. |
-| VT550      | `12` | Yugoslavian (SCS) |
+| VT520      | `12` | Serbo-Croation character set (SCS) |
+| VT300      | `13` | Local Editing Mode |
 | from 220   | `15` | Technical character set |
+| from 300   | `16` | Locator Device Port |
 | from 440   | `17` | Terminal state interrogation |
-| from 440   | `18` | Windowing capability |
-| from 440   | `21` | Horizontal scrolling |
-| from 525   | `22` | ANSI color |
-| VT550      | `23` | Greek |
-| VT550      | `24` | Turkish |
+| from 300   | `18` | Windowing capability |
+| from 300   | `19` | Dual Sessions |
+| from 420   | `21` | Horizontal scrolling |
+| from 520   | `22` | ANSI color |
+| VT520      | `23` | Greek |
+| VT520      | `24` | Turkish |
 | ? xterm ?  |  28  | rectangular editing |
 | ? xterm ?  |  29  | ANSI text locator |
-| VT550      | `42` | ISO Latin-2 character set |
-| VT550      | `44` | PCTerm |
-| VT550      | `45` | Soft key map |
-| VT550      | `46` | ASCII emulation |
+| VT520      | `42` | ISO Latin-2 character set |
+| VT520      | `44` | PCTerm |
+| VT520      | `45` | Soft key map |
+| VT520      | `46` | ASCII emulation |
 
-*NOTE* VT550 means options found in the DEC manual for VT550, but
-could have been present in other terminals before or after.
+See [VT Device Attributes, References](./VT_Device_Attributes.md#References)
 
 # Some Technical History
 

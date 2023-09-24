@@ -2,6 +2,10 @@
 
 Request Terminal Version (secondary DA)
 
+This was introduced with the VT200 series,
+and was not present before.
+Every terminal emulator I've tested responds to this.
+
 Sends one control string to the Terminal.
 
 ## Sends
@@ -13,7 +17,7 @@ Sends one control string to the Terminal.
 ## Returns
 
 ```
-TERM2DA=' <escaped sequence > '; export TERM2DA; 
+TERM2DA=' <escaped sequence> '; export TERM2DA; 
 ```
 
 Sequence is expected to look like the following:
@@ -22,12 +26,27 @@ Sequence is expected to look like the following:
 \033[>77;8888;9c
 ```
 
-The first position (77;) is meant to match position one of **primary DA**,
-though this is not reliable.
+The first position (77;), in VT terminals is the series model.
+Some emulators blindly match position one of **primary DA**.
 
 The second position (8888;) is the version of the terminal firmware.
+xterm increments this, few other emulators ever do.
 
-The third position (9) is meant to be an option marker.
+The third position (9) is meant to be an option count (sometimes, this
+is hardware options, like with or without modem).
+
+
+| VT    | Position 0 | Position 2   |
+| ---   | ---        | ---          |
+| VT220 | 1          | 0            |
+| VT240 | 2          | 0            |
+|       |            | 1 Integral Modem |
+| VT330 | 18         | 0            |
+| VT340 | 19         | 0            |
+| VT420 | 41         | 0 No Option  |
+|       |            | 1 Extended Keyboard (several possible types) |
+| VT520 | 64: B/W Monitor   | 0 STD Keyboard |
+|       | 65: Color Monitor | 1 PC Keyboard |
 
 Sequence MAY be one of:
 

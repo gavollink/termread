@@ -69,7 +69,7 @@ The \<Ps> is descibed as
 |----------|-----------------|
 | VT220    | `\033[?62;<Ps>;<...>c` |
 
-# VT200 Options \<Ps>
+## VT200 Options
 
 Unlike the VT100 in which all options were represented by a single
 position, the VT200 (and newer) series continue listing numeric
@@ -81,9 +81,87 @@ feature codes in ascending order, separated by semicolons ` ; `.
 | 2      | Printer Port        |
 | 6      | Selective Erase     |
 | 7      | DCRS                |
-| 8      | UDK                 |
+| 8      | UDK (User Defined Keys) |
+| 9      | National Replacement Character Set |
 
-    > Note the VT220 introduces 8-Bit native for the first time
+* The VT220 introduces 8-Bit native for the first time
+* Option 9 is ONLY mentioned in the VT240 Programmer Reference Manual
+
+# VT300 Series: Device Attributes
+
+| Terminal | Response        |
+|----------|-----------------|
+| VT330    | `\033[?63;<Ps>;<...>c` |
+
+## VT300 Options
+
+| Number | Feature Desciption  |
+|--------| ------------------- |
+| 1      | 132 column mode     |
+| 2      | Printer Port        |
+| 3      | Regis Graphics      |
+| 4      | Sixel Graphics      |
+| 6      | Selective Erase     |
+| 7      | DCRS                |
+| 8      | UDKs (User Defined Keys) |
+| 9      | National Replacement Character Set |
+| 13     | Local Editing Mode  |
+| 15     | Technical Character Set |
+| 16     | Locator Device Port |
+| 18     | Windowing           |
+| 19     | Dual Sessions       |
+
+# VT400 Series: Device Attributes
+
+| Terminal | Response        |
+|----------|-----------------|
+| VT420    | `\033[?64;<Ps>;<...>c` |
+
+## VT400 Options
+
+| Number | Feature Desciption  |
+|--------| ------------------- |
+| 1      | 132 column mode     |
+| 2      | Printer Port        |
+| 6      | Selective Erase     |
+| 7      | Soft Character Set  |
+| 8      | UDKs (User Defined Keys) |
+| 9      | National Replacement Character Set |
+| 15     | Technical Character Set |
+| 18     | Windowing           |
+| 19     | Dual Sessions       |
+| 21     | Horizontal Scrolling |
+
+# VT500 Series: Device Attributes
+
+| Terminal | Response        |
+|----------|-----------------|
+| VT520    | `\033[?65;<Ps>;<...>c` |
+
+## VT500 Options
+
+| Number | Feature Desciption  |
+|--------| ------------------- |
+| 1       | 132 columns |
+| 2       | Printer port |
+| 6       | Selective erase [^nr] |
+| 7       | Soft character set (DRCS) |
+| 8       | User-defined keys (UDKs) [^nr] |
+| 9       | National replacement character sets (NRCS) |
+| 12      | Serbo-Croatian (SCS) |
+| 15      | Technical character set [^nr] |
+| 18      | Windowing capability |
+| 19      | Sessions |
+| 21      | Horizontal scrolling |
+| 22      | Color |
+| 23      | Greek |
+| 24      | Turkish |
+| 42      | ISO Latin-2 |
+| 44      | PCTerm |
+| 45      | Soft key mapping |
+| 46      | ASCII terminal emulation |
+
+[^nr] Option exists, but is not reported.
 
 # References
 
@@ -140,3 +218,28 @@ publication `EK-LA120-TM-001` on page 3-5 (49 in PDF)
 
     * https://www.vt100.net/dec/ek-vt220-rm-001.pdf
 
+* `VT240 Programmer Reference Manual` publication `VT240-RM-002` on
+    page 101 (120 in PDF)
+
+    * https://www.vt100.net/dec/ek-vt220-rm-001.pdf
+
+**VT300 Series: Device Attributes**
+
+* `VT320/VT340 Programmer Reference Manual, Vol 1: Text Programming`
+   publication `EK-VT3XX-TP-002` on page 198 (212 in PDF)
+
+    * https://vt100.net/dec/ek-vt3xx-tp-002.pdf
+
+**VT400 Series: Device Attributes**
+
+* `VT420 Programmer Reference Manual`
+  publication `EK-VT420-RM.002` on page 230 (252 in PDF)
+
+    * https://manx-docs.org/collections/mds-199909/cd3/term/vt420rm2.pdf
+
+**VT500 Series: Device Attributes**
+
+* `VT520/VT525 Programmer Informaion` publication `EK-VT520-RM.A01`
+  on page 5-10 (164 in PDF)
+
+    * https://vt100.net/mirror/mds-199909/cd3/term/vt520rma.pdf
