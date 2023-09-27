@@ -59,6 +59,7 @@ just grabbing the info.
 | ------------------- | ---------------------  |
 | Windows Terminal    | `\033P!|00000000\033\` |
 | xterm 353           | `\033P!|00000000\033\` |
+| konsole             | nil                    |
 | iTerm2.app          | nil                    |
 | Terminal.app        | (repeat of -t)         |
 | KiTTY.app           | nil                    |
