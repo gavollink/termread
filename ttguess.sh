@@ -413,8 +413,7 @@ _q_getterm ()
             _debug_p "vt101 Primary DA response."
             if [ '\033[>0;10;1c' == "${TERM2DA}" ]
             then
-                _debug_p "Windows 10/11 Terminal"
-                # echo "Windows 11 Terminal"
+                _debug_p "Windows Console / Microsoft Terminal (before 1.18.1421.0)"
                 _HAS_EMOJI=1;    export _HAS_EMOJI
                 _TTY_COLORS=256; export _TTY_COLORS
                 _set_term_fallback_x ms-terminal ms-vt-utf8 \
@@ -484,6 +483,14 @@ _q_getterm ()
             _HAS_EMOJI=1;    export _HAS_EMOJI
             _TTY_COLORS=256; export _TTY_COLORS
             _set_term_fallback_x gnome-256color gnome xterm-256color
+            _TERMSET=1
+            ;;
+        '\033[?65;4;6;18;22c')
+            _debug_p "wezterm"
+            _HAS_EMOJI=1;    export _HAS_EMOJI
+            _TTY_COLORS=256; export _TTY_COLORS
+            _set_cterm_fallback vt525 vt525-basic vt520 vt520-basic \
+                vt420-basic vt420 vt320-basic vt320 xterm
             _TERMSET=1
             ;;
         '\033[?65;'*c)
@@ -571,30 +578,42 @@ _q_getterm ()
             ;;
         '\033[?62;'*c)
             _debug_p "vt200 or Clone"
-            if [ '\033[>0;95;0c' = "$TERM2DA" ]
-            then
-                _debug_p "Secondary DA looks like iTerm2"
-                _TTY_COLORS=256; export _TTY_COLORS
-                _HAS_EMOJI=1;    export _HAS_EMOJI
-                SP_EMOJISPACE=0; export SP_EMOJISPACE
-                _set_cterm_fallback iterm2 xterm-vt220 vt220 vt200 xterm
-                _TERMSET=1
-            elif [ '\033[>1;4000;29c' = "$TERM2DA" ]
-            then
-                _debug_p "Secondary DA looks like kitty"
-                _TTY_COLORS=256; export _TTY_COLORS
-                _HAS_EMOJI=1;    export _HAS_EMOJI
-                _set_cterm_fallback xterm-kitty kitty-direct kitty \
-                    xterm-vt240 vt240 xterm-vt220 vt220 vt200 \
-                    xterm
-                _TERMSET=1
-            else
-                _debug_p "Secondary DA unrecognized"
-                _TTY_COLORS=0; export _TTY_COLORS
-                _set_cterm_fallback xterm-vt240 vt240 xterm-vt220 \
-                    vt220 vt200 xterm-256color
-                _TERMSET=1
-            fi
+            case "$TERM2DA" in
+                '\033[>0;95;0c')
+                    _debug_p "Secondary DA looks like iTerm2"
+                    _TTY_COLORS=256; export _TTY_COLORS
+                    _HAS_EMOJI=1;    export _HAS_EMOJI
+                    SP_EMOJISPACE=0; export SP_EMOJISPACE
+                    _set_cterm_fallback iterm2 xterm-vt220 vt220 vt200 xterm
+                    _TERMSET=1
+                    ;;
+                '\033[>1;4000;'*c)
+                    # ;15c (Ubuntu) and ;29c (macOS), so I'm starring it
+                    _debug_p "Secondary DA looks like kitty"
+                    _TTY_COLORS=256; export _TTY_COLORS
+                    _HAS_EMOJI=1;    export _HAS_EMOJI
+                    _set_cterm_fallback xterm-kitty kitty-direct kitty \
+                        xterm-vt240 vt240 xterm-vt220 vt220 vt200 \
+                        xterm
+                    _TERMSET=1
+                    ;;
+                default)
+                    _debug_p "Secondary DA unrecognized"
+                    _TTY_COLORS=0; export _TTY_COLORS
+                    _set_term_fallback_x xterm-vt240 vt240 xterm-vt220 \
+                        vt220 vt200 xterm-256color
+                    _TERMSET=1
+                    ;;
+            esac
+            ;;
+        '\033[?61;6;7;22;23;24;28;32;42c')
+            _debug_p "Microsoft Terminal (since 1.18.1421.0)"
+            _TTY_COLORS=256; export _TTY_COLORS
+            _HAS_EMOJI=1;    export _HAS_EMOJI
+            _set_cterm_fallback ms-terminal ms-vt-utf8 \
+                ms-vt100+ ms-vt100-color xterm-256color \
+                xterm
+            _TERMSET=1
             ;;
     esac
 
