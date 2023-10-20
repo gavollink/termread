@@ -56,7 +56,7 @@ Where sequence MAY be on of:
 | Sequence                        | Observed Terminal             |
 |:--------------------------------|:------------------------------|
 | `\033/Z`                        | xterm in vt52 emulation mode  |
-| `\033/1;2c`                     | Apple Terminal.app (Catalina) |
+| `\033[?1;2c`                    | Apple Terminal.app (Catalina) |
 | `\033[?1;0c`                    | Microsoft Terminal (store)    |
 | `\033[?65;1;9c`                 | Gnome Terminal                |
 | `\033[?64;1;2;6;9;15;18;21;22c` | xterm in vt420 default mode   |
