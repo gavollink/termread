@@ -558,6 +558,8 @@ int is_vtxxx ( const char * term )
         "vt100",
         "vt101",
         "vt102",
+        // Not in terminfo.src, but does support:
+        "wezterm",
         "\000"
     };
     return is_matchlist( term, term_list );
