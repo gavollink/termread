@@ -402,6 +402,7 @@ _q_getterm ()
                 _set_term_fallback_x st vt102
                 _TERMSET=1
             else
+                _debug_p "Unknown vt102 clone."
                 # NOT PUTTY
                 _TTY_COLORS=0;   export _TTY_COLORS
                 _set_term_fallback_x vt102
@@ -486,10 +487,10 @@ _q_getterm ()
             _TERMSET=1
             ;;
         '\033[?65;4;6;18;22c')
-            _debug_p "wezterm"
+            _debug_p "wezterm with sixel"
             _HAS_EMOJI=1;    export _HAS_EMOJI
             _TTY_COLORS=256; export _TTY_COLORS
-            _set_cterm_fallback vt525 vt525-basic vt520 vt520-basic \
+            _set_cterm_fallback wezterm vt525 vt525-basic vt520 vt520-basic \
                 vt420-basic vt420 vt320-basic vt320 xterm
             _TERMSET=1
             ;;
