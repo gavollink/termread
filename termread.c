@@ -160,20 +160,41 @@ sncmp( const char * a, const char * b, long int len )
 
 int is_matchlist ( const char * term, const char ** match )
 {
-    char *xbuf;
-    xbuf = calloc( 1024, 1 );
+    char *tbuf;
+    tbuf = calloc( strlen(term)+2, 1 );
+    strcpy( tbuf, term );
+    /* If `term` is xterm-400, eliminate the -400 */
+    char * found = index(tbuf, '-');
+    if ( found ) {
+        *found = 0;
+    }
+    /* If `term` is xterm+direct2, eliminate the +direct2 */
+    found = index(tbuf, '+');
+    if ( found ) {
+        *found = 0;
+    }
+    int two = 0;
+    if ( strlen(term) > strlen(tbuf) ) {
+        two = 1;
+    }
     for ( int cx = 0; 1; cx++ ) {
         if ( 0 == match[cx][0] ) {
-            free( xbuf );
+            free( tbuf );
             return ( 1 );
         }
         /* Explicit request to match up to and including end-nulls */
         if ( 0 == sncmp( match[cx], term, strlen( match[cx] ) + 1 ) ) {
-            free( xbuf );
+            free( tbuf );
             return (0);
         }
+        if ( two ) {
+            if ( 0 == sncmp( match[cx], tbuf, strlen( match[cx] ) + 1 ) ) {
+                free( tbuf );
+                return (0);
+            }
+        }
     }
-    free( xbuf );
+    free( tbuf );
     return ( -1 );
 }
 

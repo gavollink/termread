@@ -490,7 +490,8 @@ _q_getterm ()
             _debug_p "wezterm with sixel"
             _HAS_EMOJI=1;    export _HAS_EMOJI
             _TTY_COLORS=256; export _TTY_COLORS
-            _set_cterm_fallback wezterm vt525 vt525-basic vt520 vt520-basic \
+            _set_cterm_fallback wezterm-direct wezterm \
+                vt525 vt525-basic vt520 vt520-basic \
                 vt420-basic vt420 vt320-basic vt320 xterm
             _TERMSET=1
             ;;
