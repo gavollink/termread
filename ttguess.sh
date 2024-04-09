@@ -1,46 +1,45 @@
 #!/usr/bin/env sh
 #############################################################################
-SAVETERM="${TERM}"
 
 _debug_p ()
 {
-    DEBUG=1
-    if [ ! -z "$DEBUG" ]
+    _e_setecho -b
+    if [ -n "$DEBUG" ]
     then
-        echo $*
+        $_ECHO $* >&2
     fi
 }
 
 ########################################
 # -b     Optional, attempt built-in echo OK if system echo cannot be found.
 # Sets GLOBALS:
-#  ECHO
+#  _ECHO
 _e_setecho ()
 {
     MUSTSYS=1
-    if [ ! -z "$1" -a "$1" = "-b" ]
+    if [ -n "$1" -a "$1" = "-b" ]
     then
         shift
         MUSTSYS=0
     fi
-    if [ -z "${ECHO}" -o ! -x "${ECHO}" ]
+    if [ -z "${_ECHO}" -o ! -x "${_ECHO}" ]
     then
         if [ -x /usr/local/bin/echo ]; then
-            ECHO=/usr/local/bin/echo
+            _ECHO=/usr/local/bin/echo
         elif [ -x /usr/bin/echo ]; then
-            ECHO=/usr/bin/echo
+            _ECHO=/usr/bin/echo
         elif [ -x /bin/echo ]; then
-            ECHO=/bin/echo
+            _ECHO=/bin/echo
         else
             if [ "1" = "${MUSTSYS}" ]
             then
                 echo "ERROR: Unable to find system tool, echo." >&2
                 return 1
             else
-                ECHO=echo
+                _ECHO=echo
             fi
         fi
-        export ECHO
+        export _ECHO
     fi
     return 0
 }
@@ -51,7 +50,7 @@ _e_setecho ()
 # $ARG2  ENV VAR to put path to system command.
 ##
 # Sets GLOBALS:
-#     ECHO      (calls _e_setecho)
+#     _ECHO      (calls _e_setecho)
 #     $ARG2
 _e_setsyscmd ()
 {
@@ -64,7 +63,7 @@ _e_setsyscmd ()
     fi
     WANTCMD=$1
     WANTENV=$2
-    eval 'TWANT="${'`${ECHO} ${WANTENV}`'}"'
+    eval 'TWANT="${'`${_ECHO} ${WANTENV}`'}"'
     if [ -z "${TWANT}" -o ! -x "${TWANT}" ]
     then
         if [ -x   "/usr/local/X11/bin/${WANTCMD}" ]; then
@@ -96,7 +95,7 @@ _e_setsyscmd ()
         else
             if [ "1" = "${MUSTSYS}" ]
             then
-                ${ECHO} "ERROR: Unable to find system tool, ${WANTCMD}." >&2
+                ${_ECHO} "ERROR: Unable to find system tool, ${WANTCMD}." >&2
                 return 1
             else
                 TWANT=${WANTCMD}
@@ -115,7 +114,7 @@ _e_setsyscmd ()
 
 my_inpath ()
 {
-    if ! _e_setsyscmd sed SED; then return 1; fi
+    if ! _e_setsyscmd sed _SED; then return 1; fi
 
     FCX=0
     FVAR="PATH"
@@ -125,13 +124,13 @@ my_inpath ()
         shift               # Drop first argument
     fi
     FILE="$1"
-    eval 'TWANT="${'`${ECHO} ${FVAR}`'}"'
+    eval 'TWANT="${'`${_ECHO} ${FVAR}`'}"'
 
-    for P in `$ECHO $TWANT | $SED -e's/:/ /g'`
+    for P in `$_ECHO $TWANT | $_SED -e's/:/ /g'`
     do
         if [ -e "${P}/${FILE}" ]
         then
-            $ECHO "${P}/${FILE}"
+            $_ECHO "${P}/${FILE}"
             FCX=`expr 1 + $FCX`
         fi
     done
@@ -178,7 +177,7 @@ _find_terminfo ()
 {
     _q_terminfo_dirs
     ENTRY="$1"
-    ST=`${ECHO} ${ENTRY} | cut -c1`
+    ST=`${_ECHO} ${ENTRY} | cut -c1`
     my_inpath_quiet TERMINFO_DIRS "${ST}/${ENTRY}"
     if [ "0" = "$?" ]
     then
@@ -187,7 +186,7 @@ _find_terminfo ()
         unset FOUND
         return 0
     fi
-    SX=`${ECHO} -n ${ST} | hexdump -n 1 -e '/1 "%02x"'`
+    SX=`${_ECHO} -n ${ST} | hexdump -n 1 -e '/1 "%02x"'`
     my_inpath_quiet TERMINFO_DIRS "${SX}/${ENTRY}"
     if [ "0" = "$?" ]
     then
@@ -278,37 +277,59 @@ _set_term_fallback_x ()
     true; return
 }
 
+_do_usage ()
+{
+    _e_setecho -b
+    $_ECHO " "
+    $_ECHO $0" [-q] [-h]"
+}
+
+_do_help ()
+{
+    _e_setecho -b
+    $_ECHO $0
+    $_ECHO " "
+    $_ECHO "Tries to figure out which terminal emulator is being used."
+    $_ECHO " "
+    $_ECHO " -q | --quiet"
+    $_ECHO "   Use if 'eval' of this is needed."
+    $_ECHO " "
+    $_ECHO " -h | --help"
+    $_ECHO "   This help."
+    $_ECHO " "
+    $_ECHO 'To apply recommendation: "source '$0'" or "eval `'$0 -q'`"'
+    $_ECHO " "
+}
+
 _q_getterm ()
 {
-    _e_setsyscmd grep GREP
-
-    if [ ! -x "$TERMREAD" ]; then
+    if [ ! -x "$_TERMREAD" ]; then
         if [ -x "${PWD}/termread" ]; then
-            TERMREAD="${PWD}/termread"
+            _TERMREAD="${PWD}/termread"
         else
-            _e_setsyscmd -b termread TERMREAD
+            _e_setsyscmd -b termread _TERMREAD
         fi
     fi
-    if [ ! -x "$TERMREAD" ]; then
+    if [ ! -x "$_TERMREAD" ]; then
         if [ -r "${PWD}/termread.c" ]
         then
-            _e_setsyscmd -b gcc CC
-            if [ ! -x "$CC" ]; then
-                _e_setsyscmd -b cc1 CC
+            _e_setsyscmd -b gcc _CC
+            if [ ! -x "$_CC" ]; then
+                _e_setsyscmd -b cc1 _CC
             fi
-            if [ -x "$CC" ]
+            if [ -x "$_CC" ]
             then
-                $CC -o termread termread.c
+                $_CC -o termread termread.c
             fi
             if [ -x "${PWD}/termread" ]; then
-                TERMREAD="${PWD}/termread"
+                _TERMREAD="${PWD}/termread"
             fi
         fi
     fi
-    if [ "termread" = "${TERMREAD}" ]; then
-        TERMREAD="${PWD}/termread"
+    if [ "termread" = "${_TERMREAD}" ]; then
+        _TERMREAD="${PWD}/termread"
     fi
-    if [ ! -x "$TERMREAD" ]; then
+    if [ ! -x "$_TERMREAD" ]; then
         _debug_p "Unable to locate termread."
         return 1
     fi
@@ -319,14 +340,15 @@ _q_getterm ()
     unset _TM_ITERM2
     unset _TM_EMOJI
 
-    eval `${TERMREAD} '!' -t`
+    eval `${_TERMREAD} '!' -t`
+    _debug_p '...Primary DA "'$TERMID'".'
 
     if [ -z "${TERMID}" ]; then
         _debug_p "No response to 'Primary DA'"
         # If it didn't answer to the xterm user9, then no color.
         _TM_COLORS=0; export _TM_COLORS
-        eval `TERM="vt52" ${TERMREAD} -t`
-        _debug_p "Read DECID '${TERMID}'."
+        eval `TERM="vt52" ${_TERMREAD} -t`
+        _debug_p "Read DECID '"${TERMID}"'."
         if [ -z "${TERMID}" ]
         then
             _debug_p "No response to 'DECID'"
@@ -378,7 +400,12 @@ _q_getterm ()
         return 1
     fi
 
-    eval `"${TERMREAD}" '!' -t -2 -3`
+    eval `"${_TERMREAD}" '!' -2 -3`
+    _debug_p '.Secondary DA "'$TERM2DA'".'
+    if [ -n "$TERM3DA" ]
+    then
+        _debug_p '..Tertiary DA "'$TERM3DA'".'
+    fi
     case "$TERMID" in
         *PuTTY)
             _debug_p "PuTTY response"
@@ -441,7 +468,7 @@ _q_getterm ()
             elif [ '\033[>0;115;0c' = "$TERM2DA" ]
             then
                 # Cool Retro Term or Konsole
-                eval `"${TERMREAD}" '!' -b`
+                eval `"${_TERMREAD}" '!' -b`
                 if [ -z "$TERM_BG" ]; then
                     _debug_p "Cool-Retro-TERM"
                     _TM_EMOJI=1;      export _TM_EMOJI
@@ -657,7 +684,7 @@ _q_getterm ()
     _debug_p "Terminal Type Unknown: Trying to figure out color response."
 
     unset result
-    eval `"${TERMREAD}" '!' -c 231 --var result`
+    eval `"${_TERMREAD}" '!' -c 231 --var result`
     if [ ! -z "$result" ]
     then
         _TM_COLORS=256
@@ -670,7 +697,7 @@ _q_getterm ()
         return 0
     fi
     unset result
-    eval `"${TERMREAD}" '!' -c 14 --var result`
+    eval `"${_TERMREAD}" '!' -c 14 --var result`
     if [ ! -z "$result" ]
     then
         _TM_COLORS=16
@@ -683,7 +710,7 @@ _q_getterm ()
         return 0
     fi
     unset result
-    eval `"${TERMREAD}" '!' -c 6 --var result`
+    eval `"${_TERMREAD}" '!' -c 6 --var result`
     if [ ! -z "$result" ]
     then
         _TM_COLORS=8
@@ -697,11 +724,43 @@ _q_getterm ()
     fi
     _TM_COLORS=0
     export _TM_COLORS
-    unset TERMREAD
     return 1
 }
 
+DEBUG=1
+ARGS=$*
+for aa in $ARGS
+do
+    if [ "-q" = "$aa" ]
+    then
+        unset DEBUG
+    elif [ "--quiet" = "$aa" ]
+    then
+        unset DEBUG
+    elif [ "--help" = "$aa" ]
+    then
+        _do_help
+        exit 0
+    elif [ "-h" = "$aa" ]
+    then
+        _do_help
+        exit 0
+    else
+        DEBUG=1 _debug_p "Unrecognized argument: "$aa
+        _do_usage
+        unset DEBUG
+        exit 1
+    fi
+done
 _q_getterm
-echo "# Recommend:"
-echo "TERM=$TERM"
-#TERM="${SAVETERM}"; export TERM
+if [ -n "$DEBUG" ]
+then
+    $_ECHO "# Recommended TERM:"
+fi
+unset DEBUG
+unset _TERMREAD
+unset ARGS
+unset _SED
+unset _CC
+$_ECHO "TERM=$TERM"
+unset _ECHO
