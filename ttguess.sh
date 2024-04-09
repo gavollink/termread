@@ -280,20 +280,11 @@ _set_term_fallback_x ()
 
 _q_getterm ()
 {
-    # Needs an interactive session
-    case $- in
-        *i*) ;;
-        *) return 0;;
-    esac
     _e_setsyscmd grep GREP
 
     if [ ! -x "$TERMREAD" ]; then
         if [ -x "${PWD}/termread" ]; then
             TERMREAD="${PWD}/termread"
-        elif [ -x "${HOME}/sbin/termread" ]; then
-            TERMREAD="${HOME}/sbin/termread"
-        elif [ -x "${HOME}/bin/termread" ]; then
-            TERMREAD="${HOME}/bin/termread"
         else
             _e_setsyscmd -b termread TERMREAD
         fi
@@ -303,7 +294,7 @@ _q_getterm ()
         then
             _e_setsyscmd -b gcc CC
             if [ ! -x "$CC" ]; then
-                _e_setsyscmd -b cc CC
+                _e_setsyscmd -b cc1 CC
             fi
             if [ -x "$CC" ]
             then
@@ -329,11 +320,13 @@ _q_getterm ()
     unset _TM_EMOJI
 
     eval `${TERMREAD} '!' -t`
+
     if [ -z "${TERMID}" ]; then
         _debug_p "No response to 'Primary DA'"
         # If it didn't answer to the xterm user9, then no color.
         _TM_COLORS=0; export _TM_COLORS
         eval `TERM="vt52" ${TERMREAD} -t`
+        _debug_p "Read DECID '${TERMID}'."
         if [ -z "${TERMID}" ]
         then
             _debug_p "No response to 'DECID'"
@@ -385,7 +378,7 @@ _q_getterm ()
         return 1
     fi
 
-    eval `"${TERMREAD}" '!' -2`
+    eval `"${TERMREAD}" '!' -t -2 -3`
     case "$TERMID" in
         *PuTTY)
             _debug_p "PuTTY response"
@@ -468,6 +461,7 @@ _q_getterm ()
                 _debug_p "Terminal.app"
                 _TM_EMOJI=1;    export _TM_EMOJI
                 _TM_COLORS=256; export _TM_COLORS
+                _TM_TRUECLR=1;  export _TM_TRUCLR
                 _set_cterm_fallback nsterm xterm
                 _TERMSET=1
             elif [ '\033[>0;95;0c' == "${TERM2DA}"  -a "0" = "$_TERMSET" ]
@@ -476,6 +470,7 @@ _q_getterm ()
                 _debug_p "iTerm2.app"
                 _TM_COLORS=256; export _TM_COLORS
                 _TM_ITERM2=1;   export _TM_ITERM2
+                _TM_TRUECLR=1;  export _TM_TRUCLR
                 _set_term_fallback_x iterm2 iTerm2.app xterm-256color
                 _TERMSET=1
             else
@@ -653,7 +648,7 @@ _q_getterm ()
     then
         unset TERMID
         unset TERM2DA
-        export TERM
+        unset TERM3DA
         return 0
     fi
 
@@ -702,9 +697,11 @@ _q_getterm ()
     fi
     _TM_COLORS=0
     export _TM_COLORS
+    unset TERMREAD
     return 1
 }
 
 _q_getterm
 echo "# Recommend:"
 echo "TERM=$TERM"
+#TERM="${SAVETERM}"; export TERM

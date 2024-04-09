@@ -193,6 +193,32 @@ which wouldn't be compatible with this at all, either.
 I have never encountered a program that only talks *Tektronix*, so I've
 never considered trying to add such support here.
 
+# ttguess.sh Utility
+
+ttguess.sh is the tool I use in my startup scripts to try to figure
+out which Terminal Emulator I'm logging in with.
+This script uses termread internally.
+
+This will export a number of environment variables about the terminal
+(obiously, requires `source ttguess.sh` or `. ttguess.sh`), though
+not all of these have complete coverage.
+
+`_TM_KITTY`
+`_TM_ITERM2`
+
+Each of these have extended terminal capabilities not covered by any
+`termcap` database, so these are set separately (and both are set
+if `wezterm` is detected).
+
+`_TM_COLORS` is the known color count (up to 256)
+
+`_TM_EMOJI` if the terminal is known to be able to print EMOJI characters.
+
+`_TM_EMOJISPACE` if the terminal prints fat emoji, obscuring the next char.
+
+`_TM_TRUECOLOR` if the terminal is known to support truecolor (even if the
+termcap doesn't know about it).
+
 # Just because
 
 Check out the [Teleprinter](./TP_History.md)
