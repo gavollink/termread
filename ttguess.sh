@@ -209,18 +209,18 @@ _set_cterm_fallback ()
 {
     unset TCOLOR
 
-    if [ ! -z "$_TTY_COLORS" -a "0" -lt "$_TTY_COLORS" ]; then
+    if [ ! -z "$_TM_COLORS" -a "0" -lt "$_TM_COLORS" ]; then
         TCOLOR="+c"
-        if [ "8" -le "$_TTY_COLORS" ]; then
+        if [ "8" -le "$_TM_COLORS" ]; then
             TCOLOR="-8color +color8 $TCOLOR"
         fi
-        if [ "16" -le "$_TTY_COLORS" ]; then
+        if [ "16" -le "$_TM_COLORS" ]; then
             TCOLOR="-16color +16color +color $TCOLOR"
         fi
-        if [ "88" -le "$_TTY_COLORS" ]; then
+        if [ "88" -le "$_TM_COLORS" ]; then
             TCOLOR="-88color +88color $TCOLOR"
         fi
-        if [ "256" -le "$_TTY_COLORS" ]; then
+        if [ "256" -le "$_TM_COLORS" ]; then
             TCOLOR="-256color +256color $TCOLOR"
         fi
     fi
@@ -280,6 +280,11 @@ _set_term_fallback_x ()
 
 _q_getterm ()
 {
+    # Needs an interactive session
+    case $- in
+        *i*) ;;
+        *) return 0;;
+    esac
     _e_setsyscmd grep GREP
 
     if [ ! -x "$TERMREAD" ]; then
@@ -318,14 +323,16 @@ _q_getterm ()
     fi
 
     _TERMSET=0
-    _ISPUTTY=0; export _ISPUTTY
-    _HAS_EMOJI=0;  export _HAS_EMOJI
+    unset _TM_PUTTY
+    unset _TM_KITTY
+    unset _TM_ITERM2
+    unset _TM_EMOJI
 
     eval `${TERMREAD} '!' -t`
     if [ -z "${TERMID}" ]; then
         _debug_p "No response to 'Primary DA'"
         # If it didn't answer to the xterm user9, then no color.
-        _TTY_COLORS=0; export _TTY_COLORS
+        _TM_COLORS=0; export _TM_COLORS
         eval `TERM="vt52" ${TERMREAD} -t`
         if [ -z "${TERMID}" ]
         then
@@ -382,9 +389,9 @@ _q_getterm ()
     case "$TERMID" in
         *PuTTY)
             _debug_p "PuTTY response"
-            _ISPUTTY=1;      export _ISPUTTY
-            _TTY_COLORS=256; export _TTY_COLORS
-            _HAS_EMOJI=1;    export _HAS_EMOJI
+            _TM_PUTTY=1;    export _TM_PUTTY
+            _TM_COLORS=256; export _TM_COLORS
+            _TM_EMOJI=1;    export _TM_EMOJI
             _set_term_fallback_x "putty-256color" "putty" "xterm-256color"
             _TERMSET=1
             ;;
@@ -398,13 +405,13 @@ _q_getterm ()
                 ## every other terminal emulator gives us SOME
                 ## other response.
                 _debug_p "No response on Secondary DA, probably 'st'"
-                _TTY_COLORS=8;   export _TTY_COLORS
+                _TM_COLORS=8;   export _TM_COLORS
                 _set_term_fallback_x st vt102
                 _TERMSET=1
             else
                 _debug_p "Unknown vt102 clone."
                 # NOT PUTTY
-                _TTY_COLORS=0;   export _TTY_COLORS
+                _TM_COLORS=0;   export _TM_COLORS
                 _set_term_fallback_x vt102
                 _TERMSET=1
             fi
@@ -415,15 +422,15 @@ _q_getterm ()
             if [ '\033[>0;10;1c' == "${TERM2DA}" ]
             then
                 _debug_p "Windows Console / Microsoft Terminal (before 1.18.1421.0)"
-                _HAS_EMOJI=1;    export _HAS_EMOJI
-                _TTY_COLORS=256; export _TTY_COLORS
+                _TM_EMOJI=1;    export _TM_EMOJI
+                _TM_COLORS=256; export _TM_COLORS
                 _set_term_fallback_x ms-terminal ms-vt-utf8 \
                     ms-vt100+ ms-vt100-color xterm-256color
                 _TERMSET=1
             else
                 _debug_p "VT101 Response, specific type unknown"
                 # VT101 or Descendent
-                _TTY_COLORS=0;   export _TTY_COLORS
+                _TM_COLORS=0;   export _TM_COLORS
                 _set_term_fallback_x vt101
                 _TERMSET=1
             fi
@@ -434,8 +441,8 @@ _q_getterm ()
             if [ '\033[>84;0;0c' = "$TERM2DA" ]
             then
                 _debug_p "Byobu terminal"
-                _HAS_EMOJI=1;    export _HAS_EMOJI
-                _TTY_COLORS=256; export _TTY_COLORS
+                _TM_EMOJI=1;    export _TM_EMOJI
+                _TM_COLORS=256; export _TM_COLORS
                 _set_cterm_fallback xterm
                 _TERMSET=1
             elif [ '\033[>0;115;0c' = "$TERM2DA" ]
@@ -444,14 +451,14 @@ _q_getterm ()
                 eval `"${TERMREAD}" '!' -b`
                 if [ -z "$TERM_BG" ]; then
                     _debug_p "Cool-Retro-TERM"
-                    _HAS_EMOJI=1;  export _HAS_EMOJI
-                    _TTY_COLORS=0; export _TTY_COLORS
-                    SP_EMOJISPACE=1; export SP_EMOJISPACE
+                    _TM_EMOJI=1;      export _TM_EMOJI
+                    _TM_COLORS=0;     export _TM_COLORS
+                    _TM_EMOJISPACE=1; export _TM_EMOJISPACE
                     _set_term_fallback_x konsole
                 else
                     _debug_p "Konsole"
-                    _HAS_EMOJI=1;    export _HAS_EMOJI
-                    _TTY_COLORS=256; export _TTY_COLORS
+                    _TM_EMOJI=1;    export _TM_EMOJI
+                    _TM_COLORS=256; export _TM_COLORS
                     _set_term_fallback_x konsole-256color konsole xterm-256color
                 fi
                 _TERMSET=1
@@ -459,20 +466,21 @@ _q_getterm ()
             then
                 # NeXT or macOS Terminal.app
                 _debug_p "Terminal.app"
-                _HAS_EMOJI=1;    export _HAS_EMOJI
-                _TTY_COLORS=256; export _TTY_COLORS
+                _TM_EMOJI=1;    export _TM_EMOJI
+                _TM_COLORS=256; export _TM_COLORS
                 _set_cterm_fallback nsterm xterm
                 _TERMSET=1
             elif [ '\033[>0;95;0c' == "${TERM2DA}"  -a "0" = "$_TERMSET" ]
             then
                 # iTerm2
                 _debug_p "iTerm2.app"
-                _TTY_COLORS=256; export _TTY_COLORS
+                _TM_COLORS=256; export _TM_COLORS
+                _TM_ITERM2=1;   export _TM_ITERM2
                 _set_term_fallback_x iterm2 iTerm2.app xterm-256color
                 _TERMSET=1
             else
-                _HAS_EMOJI=0;    export _HAS_EMOJI
-                _TTY_COLORS=0;   export _TTY_COLORS
+                _TM_EMOJI=0;    export _TM_EMOJI
+                _TM_COLORS=0;   export _TM_COLORS
                 _debug_p "VT100 Primary DA response."
                 _set_term_fallback_x vt100-basic
                 _TERMSET=1
@@ -481,15 +489,18 @@ _q_getterm ()
         '\033[?65;1;9c')
             _debug_p "Gnome response"
             # should respond to TERM_BG and COLOR
-            _HAS_EMOJI=1;    export _HAS_EMOJI
-            _TTY_COLORS=256; export _TTY_COLORS
+            _TM_EMOJI=1;    export _TM_EMOJI
+            _TM_COLORS=256; export _TM_COLORS
             _set_term_fallback_x gnome-256color gnome xterm-256color
             _TERMSET=1
             ;;
         '\033[?65;4;6;18;22c')
             _debug_p "wezterm with sixel"
-            _HAS_EMOJI=1;    export _HAS_EMOJI
-            _TTY_COLORS=256; export _TTY_COLORS
+            _TM_EMOJI=1;    export _TM_EMOJI
+            _TM_COLORS=256; export _TM_COLORS
+            _TM_TRUECLR=1;  export _TM_TRUCLR
+            _TM_KITTY=1;    export _TM_KITTY
+            _TM_ITERM2=1;   export _TM_ITERM2
             _set_cterm_fallback wezterm-direct wezterm \
                 vt525 vt525-basic vt520 vt520-basic \
                 vt420-basic vt420 vt320-basic vt320 xterm
@@ -497,7 +508,7 @@ _q_getterm ()
             ;;
         '\033[?65;'*c)
             _debug_p "vt500 series or clone"
-            _TTY_COLORS=0; export _TTY_COLORS
+            _TM_COLORS=0; export _TM_COLORS
             _set_term_fallback_x vt525-basic vt525 vt520-basic vt520 \
                 vt420-basic vt420 vt320-basic vt320 \
                 vt300 vt220-basic vt220 vt200
@@ -505,26 +516,35 @@ _q_getterm ()
             ;;
         '\033[?64;1;2;6;9;15;16;17;18;21;22;28c')
             _debug_p "xterm in vt420 mode"
-            _TTY_COLORS=256; export _TTY_COLORS
+            _TM_COLORS=256; export _TM_COLORS
             _set_term_fallback_x xterm-256color
             _TERMSET=1
             ;;
+        '\033[?64;1;9;15;21;22c')
+            _debug_p "zutty in vt420 mode"
+            _TM_EMOJI=0;    export _TM_EMOJI
+            _TM_NOSTATUS=1; export _TM_EMOJI
+            _TM_COLORS=256; export _TM_COLORS
+            _set_term_fallback_x zutty vt420-basic vt420 xterm-256color
+            _TERMSET=1
+            ;;
         '\033[?64;'*c)
-            _debug_p "vt420 or clone"
-            _TTY_COLORS=0; export _TTY_COLORS
+            _debug_p "vt420 series or clone"
+            _TM_EMOJI=0;  export _TM_EMOJI
+            _TM_COLORS=0; export _TM_COLORS
             _set_term_fallback_x vt420-basic vt420 vt320-basic vt320 \
                 vt300 vt220-basic vt220 vt200
             _TERMSET=1
             ;;
         '\033[?63;1;2;6;9;15;16;22;28c')
             _debug_p "xterm in vt320 mode"
-            _TTY_COLORS=256; export _TTY_COLORS
+            _TM_COLORS=256; export _TM_COLORS
             _set_term_fallback_x xterm-vt320 vt320 vt300 xterm-256color
             _TERMSET=1
             ;;
         '\033[?63;1;2;4;6;9;15;16;22;28c')
             _debug_p "xterm in vt340 mode"
-            _TTY_COLORS=256; export _TTY_COLORS
+            _TM_COLORS=256; export _TM_COLORS
             _set_term_fallback_x xterm-vt340 vt340 xterm-vt320 \
                 vt320 vt300 xterm-256color
             _TERMSET=1
@@ -534,25 +554,26 @@ _q_getterm ()
             if [ 'xterm-256color' = "$TERM2DA" ]
             then
                 _debug_p "ConnectBot Android"
-                _TTY_COLORS=256; export _TTY_COLORS
+                _TM_COLORS=256; export _TM_COLORS
                 _set_cterm_fallback xterm
+                _TERMSET=1
             else
                 _debug_p "Unknown subtype"
-                _TTY_COLORS=0; export _TTY_COLORS
+                _TM_COLORS=0; export _TM_COLORS
                 _set_term_fallback_x vt320-basic vt320 vt300
                 _TERMSET=1
             fi
             ;;
         '\033[?62;1;2;4;6;9;15;16;22;28c')
             _debug_p "xterm in vt240 mode ([?62; with feature 4)"
-            _TTY_COLORS=256; export _TTY_COLORS
+            _TM_COLORS=256; export _TM_COLORS
             _set_term_fallback_x xterm-vt240 vt240 xterm-vt220 \
                 vt220 vt200 xterm-256color
             _TERMSET=1
             ;;
         '\033[?62;1;2;6;9;15;16;22;28c')
             _debug_p "xterm in vt220 mode ([?62; without feature 4)"
-            _TTY_COLORS=256; export _TTY_COLORS
+            _TM_COLORS=256; export _TM_COLORS
             _set_term_fallback_x xterm-vt220 vt220 vt200 xterm-256color
             _TERMSET=1
             ;;
@@ -560,20 +581,20 @@ _q_getterm ()
             if [ '\033[>0;115;0c' = "$TERM2DA" ]
             then
                 _debug_p "Konsole"
-                _HAS_EMOJI=1;    export _HAS_EMOJI
-                _TTY_COLORS=256; export _TTY_COLORS
+                _TM_EMOJI=1;    export _TM_EMOJI
+                _TM_COLORS=256; export _TM_COLORS
                 _set_term_fallback_x konsole-256color konsole xterm-256color
                 _TERMSET=1
             elif [ '\033[>1;115;0c' = "$TERM2DA" ]
             then
                 _debug_p "Konsole"
-                _HAS_EMOJI=1;    export _HAS_EMOJI
-                _TTY_COLORS=256; export _TTY_COLORS
+                _TM_EMOJI=1;    export _TM_EMOJI
+                _TM_COLORS=256; export _TM_COLORS
                 _set_term_fallback_x konsole-256color konsole xterm-256color
                 _TERMSET=1
             else
                 _debug_p "Unknown vt220 descendent"
-                _TTY_COLORS=0;   export _TTY_COLORS
+                _TM_COLORS=0;   export _TM_COLORS
                 _set_term_fallback_x vt220-basic
                 _TERMSET=1
             fi
@@ -583,17 +604,17 @@ _q_getterm ()
             case "$TERM2DA" in
                 '\033[>0;95;0c')
                     _debug_p "Secondary DA looks like iTerm2"
-                    _TTY_COLORS=256; export _TTY_COLORS
-                    _HAS_EMOJI=1;    export _HAS_EMOJI
-                    SP_EMOJISPACE=0; export SP_EMOJISPACE
+                    _TM_COLORS=256; export _TM_COLORS
+                    _TM_EMOJI=1;    export _TM_EMOJI
                     _set_cterm_fallback iterm2 xterm-vt220 vt220 vt200 xterm
                     _TERMSET=1
                     ;;
                 '\033[>1;4000;'*c)
                     # ;15c (Ubuntu) and ;29c (macOS), so I'm starring it
                     _debug_p "Secondary DA looks like kitty"
-                    _TTY_COLORS=256; export _TTY_COLORS
-                    _HAS_EMOJI=1;    export _HAS_EMOJI
+                    _TM_COLORS=256; export _TM_COLORS
+                    _TM_EMOJI=1;    export _TM_EMOJI
+                    _TM_KITTY=1;    export _TM_KITTY
                     _set_cterm_fallback xterm-kitty kitty-direct kitty \
                         xterm-vt240 vt240 xterm-vt220 vt220 vt200 \
                         xterm
@@ -601,7 +622,7 @@ _q_getterm ()
                     ;;
                 default)
                     _debug_p "Secondary DA unrecognized"
-                    _TTY_COLORS=0; export _TTY_COLORS
+                    _TM_COLORS=0; export _TM_COLORS
                     _set_term_fallback_x xterm-vt240 vt240 xterm-vt220 \
                         vt220 vt200 xterm-256color
                     _TERMSET=1
@@ -610,8 +631,17 @@ _q_getterm ()
             ;;
         '\033[?61;6;7;22;23;24;28;32;42c')
             _debug_p "Microsoft Terminal (since 1.18.1421.0)"
-            _TTY_COLORS=256; export _TTY_COLORS
-            _HAS_EMOJI=1;    export _HAS_EMOJI
+            _TM_COLORS=256; export _TM_COLORS
+            _TM_EMOJI=1;    export _TM_EMOJI
+            _set_cterm_fallback ms-terminal ms-vt-utf8 \
+                ms-vt100+ ms-vt100-color xterm-256color \
+                xterm
+            _TERMSET=1
+            ;;
+        '\033[?61;6;7;21;22;23;24;28;32;42c')
+            _debug_p "Microsoft Terminal (since 1.19.10573.0)"
+            _TM_COLORS=256;   export _TM_COLORS
+            _TM_EMOJI=1;      export _TM_EMOJI
             _set_cterm_fallback ms-terminal ms-vt-utf8 \
                 ms-vt100+ ms-vt100-color xterm-256color \
                 xterm
@@ -635,8 +665,8 @@ _q_getterm ()
     eval `"${TERMREAD}" '!' -c 231 --var result`
     if [ ! -z "$result" ]
     then
-        _TTY_COLORS=256
-        export _TTY_COLORS
+        _TM_COLORS=256
+        export _TM_COLORS
         if [ "$TERM" = 'xterm' ]
         then
             _set_term_fallback_x xterm-256color xterm-16color xterm-color
@@ -648,8 +678,8 @@ _q_getterm ()
     eval `"${TERMREAD}" '!' -c 14 --var result`
     if [ ! -z "$result" ]
     then
-        _TTY_COLORS=16
-        export _TTY_COLORS
+        _TM_COLORS=16
+        export _TM_COLORS
         if [ "$TERM" = 'xterm' ]
         then
             _set_term_fallback_x xterm-16color xterm-color
@@ -661,8 +691,8 @@ _q_getterm ()
     eval `"${TERMREAD}" '!' -c 6 --var result`
     if [ ! -z "$result" ]
     then
-        _TTY_COLORS=8
-        export _TTY_COLORS
+        _TM_COLORS=8
+        export _TM_COLORS
         if [ "$TERM" = 'xterm' ]
         then
             _set_term_fallback_x xterm-color
@@ -670,8 +700,8 @@ _q_getterm ()
         unset result
         return 0
     fi
-    _TTY_COLORS=0
-    export _TTY_COLORS
+    _TM_COLORS=0
+    export _TM_COLORS
     return 1
 }
 
