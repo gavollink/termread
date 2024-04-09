@@ -6,7 +6,7 @@ _debug_p ()
     _e_setecho -b
     if [ -n "$DEBUG" ]
     then
-        $_ECHO $* >&2
+        "$_ECHO" $* >&2
     fi
 }
 
@@ -93,7 +93,11 @@ _e_setsyscmd ()
         elif [ -x "/bin/${WANTCMD}" ]; then
             TWANT="/bin/${WANTCMD}"
         else
-            if [ "1" = "${MUSTSYS}" ]
+            _TEST=`which ${WANTCMD}`
+            if [ -n "${_TEST}" -a -x "${_TEST}" ]
+            then
+                TWANT="$_TEST"
+            elif [ "1" = "${MUSTSYS}" ]
             then
                 ${_ECHO} "ERROR: Unable to find system tool, ${WANTCMD}." >&2
                 return 1
@@ -126,11 +130,11 @@ my_inpath ()
     FILE="$1"
     eval 'TWANT="${'`${_ECHO} ${FVAR}`'}"'
 
-    for P in `$_ECHO $TWANT | $_SED -e's/:/ /g'`
+    for P in `"$_ECHO" $TWANT | $_SED -e's/:/ /g'`
     do
         if [ -e "${P}/${FILE}" ]
         then
-            $_ECHO "${P}/${FILE}"
+            "$_ECHO" "${P}/${FILE}"
             FCX=`expr 1 + $FCX`
         fi
     done
@@ -280,25 +284,25 @@ _set_term_fallback_x ()
 _do_usage ()
 {
     _e_setecho -b
-    $_ECHO " "
-    $_ECHO $0" [-q] [-h]"
+    "$_ECHO" " "
+    "$_ECHO" $0" [-q] [-h]"
 }
 
 _do_help ()
 {
     _e_setecho -b
-    $_ECHO $0
-    $_ECHO " "
-    $_ECHO "Tries to figure out which terminal emulator is being used."
-    $_ECHO " "
-    $_ECHO " -q | --quiet"
-    $_ECHO "   Use if 'eval' of this is needed."
-    $_ECHO " "
-    $_ECHO " -h | --help"
-    $_ECHO "   This help."
-    $_ECHO " "
-    $_ECHO 'To apply recommendation: "source '$0'" or "eval `'$0 -q'`"'
-    $_ECHO " "
+    "$_ECHO" $0
+    "$_ECHO" " "
+    "$_ECHO" "Tries to figure out which terminal emulator is being used."
+    "$_ECHO" " "
+    "$_ECHO" " -q | --quiet"
+    "$_ECHO" "   Use if 'eval' of this is needed."
+    "$_ECHO" " "
+    "$_ECHO" " -h | --help"
+    "$_ECHO" "   This help."
+    "$_ECHO" " "
+    "$_ECHO" 'To apply recommendation: "source '$0'" or "eval `'$0 -q'`"'
+    "$_ECHO" " "
 }
 
 _q_getterm ()
@@ -753,14 +757,17 @@ do
     fi
 done
 _q_getterm
-if [ -n "$DEBUG" ]
+if [ "0" = "$?" ]
 then
-    $_ECHO "# Recommended TERM:"
+    if [ -n "$DEBUG" ]
+    then
+        "$_ECHO" "# Recommended TERM:"
+    fi
+    "$_ECHO" "TERM=$TERM"
 fi
 unset DEBUG
 unset _TERMREAD
 unset ARGS
 unset _SED
 unset _CC
-$_ECHO "TERM=$TERM"
 unset _ECHO
