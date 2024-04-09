@@ -594,6 +594,7 @@ prinhelp(void)
   ACTIONS:\n\
 \n\
     -t\n\
+    -1\n\
     --term      Ask for terminal ident 'primary DA'\n\
 \n\
     -2\n\
@@ -741,6 +742,9 @@ args( int argc, char *argv[] )
             ) || (
                    ( ( strlen("--term") <= strlen(argv[cx]) )
                 && ( 0 == strcmp("--term", argv[cx]) ) )
+            ) || (
+                   ( ( strlen("-1") <= strlen(argv[cx]) )
+                && ( 0 == strcmp("-1", argv[cx]) ) )
             ) )
         {
             opt.termname = 1;
