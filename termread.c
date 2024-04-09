@@ -13,7 +13,7 @@
  * LICENSE: Embedded at bottom...
  *
  */
-#define VERSION "1.14"
+#define VERSION "1.15"
 #define C_YEARS "2023"
 #define IDENT "termread"
 #define WEBHOME "https://gitlab.home.vollink.com/external/termread/"
