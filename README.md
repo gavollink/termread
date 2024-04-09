@@ -219,6 +219,8 @@ if `wezterm` is detected).
 `_TM_TRUECOLOR` if the terminal is known to support truecolor (even if the
 termcap doesn't know about it).
 
+`TERM` is set to the recommended value (as printed in the output).
+
 # Just because
 
 Check out the [Teleprinter](./TP_History.md)
