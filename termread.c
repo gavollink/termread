@@ -13,8 +13,8 @@
  * LICENSE: Embedded at bottom...
  *
  */
-#define VERSION "1.15"
-#define C_YEARS "2023"
+#define VERSION "1.16"
+#define C_YEARS "2021-2024"
 #define IDENT "termread"
 #define WEBHOME "https://gitlab.home.vollink.com/external/termread/"
 #define AT "@"
@@ -34,7 +34,6 @@
 #include <time.h>
 
 int term_cleanline();
-int is_next( int argc, int cx );
 void printlicense( void );
 
 static struct termios orig_term, new_term;
@@ -68,6 +67,202 @@ struct sopt {
     char * envterm;
     char * argv0;
 } opt;
+
+/***************************************
+ * .control :
+ * 'h' Help Output HEADER
+ * 'H' Help Output HEADER only if opt.debug is set.
+ * 'e' END of STRuCTURE
+ * 'd' Help Output option only if apt.debug is set.
+ * 'u' Suppress from `usage` output
+ */
+struct options_s {
+    int   *int_dest;
+    char  *header;
+    char  *full[3];
+    char  *want;
+    char  *descr;
+    char   indic;
+    char  *helptext[3];
+    char   ltr[3];
+    char   control;
+    char   is_action;
+} Options[] = {
+    {
+        .control = 'h',
+        .header = "ACTIONS\000\000",
+    },
+    {
+        .is_action = 1,
+        .full = { "term", NULL },
+        .ltr  = { 't', '1', 0 },
+        .int_dest = &opt.termname,
+        .helptext = { "Ask terminal for 'Primary DA'.", NULL }
+    },
+    {
+        .is_action = 1,
+        .full = { "term2", NULL },
+        .ltr  = { '2', 0 },
+        .int_dest = &opt.term2da,
+        .helptext = { "Ask terminal for 'Secondary DA'.", NULL }
+    },
+    {
+        .is_action = 1,
+        .full = { "term3", NULL },
+        .ltr  = { '3', 0 },
+        .int_dest = &opt.term3da,
+        .helptext = { "Ask terminal for 'Tertiary DA'.", NULL }
+    },
+    {
+        .is_action = 1,
+        .full = { "bg", "background", NULL },
+        .ltr  = { 'b', 0 },
+        .int_dest = &opt.background,
+        .helptext = { "Ask terminal for background color.", NULL }
+    },
+    {
+        .is_action = 1,
+        .full = { "color", "colour", NULL },
+        .ltr  = { 'c', 0 },
+        .want = "nnn",
+        .descr = "color",
+        .indic = 'c',
+        .helptext = { "Ask terminal for background color.", NULL }
+    },
+    {
+        .is_action = 1,
+        .full = { "print", "printf", NULL },
+        .ltr  = { 'p', 0 },
+        .want = "string",
+        .descr = "printf",
+        .indic = 'p',
+        .int_dest = &opt.print,
+        .helptext = {
+            "Ask terminal using string.",
+            "String escapes will be expanded.",
+            NULL
+        }
+    },
+    {
+        .control = 'd',
+        .is_action = 1,
+        .full = { "erase", NULL },
+        .ltr  = { 0 },
+        .int_dest = &opt.justerase,
+        .helptext = {
+            "Print 'erase current line' sequence,",
+            "    and exit immediately.",
+            NULL
+        }
+    },
+    {
+        .control = 'h',
+        .header = "OPTIONS\000\000",
+    },
+    {
+        .full = { NULL },
+        .ltr  = { '!', 0 },
+        .helptext = { "Ignore TERM env, asks as if TERM=xterm.", NULL }
+    },
+    {
+        .full = { "delay", NULL },
+        .ltr  = { 'd', 0 },
+        .want = "ddd",
+        .descr = "delay",
+        .indic = 'd',
+        .helptext = {
+            "Milliseconds to wait for terminal reply.",
+            "default: 500 ( 0.5 seconds ).",
+            NULL
+        }
+    },
+    {
+        .ltr  = { 0 },
+        .full = { "var", NULL },
+        .want = "name",
+        .descr = "variable name",
+        .indic = 'Z',
+        .helptext = {
+            "Variable name for shell readable output.",
+            "Only used for first output if multiple.",
+            NULL
+        }
+    },
+    {
+        .ltr  = { 's', 0 },
+        .full = { "stats", NULL },
+        .int_dest = &opt.wantstat,
+        .helptext = {
+            "Print stats info after read response.",
+            NULL
+        }
+    },
+    {
+        .ltr  = { 'v', 0 },
+        .full = { "verbose", NULL },
+        .int_dest = &opt.debug,
+        .helptext = {
+            "Print extra informational output.",
+            NULL
+        }
+    },
+    {
+        .control = 'd',
+        .ltr  = { 'o', 0 },
+        .full = { "tty", NULL },
+        .want = "/dev/tt...",
+        .descr = "device name",
+        .indic = 'o',
+        .helptext = {
+            "Open this instead of current stdin/stdout.",
+            "Probably won't work.",
+            NULL
+        }
+    },
+    {
+        // THIS NON-OPTION IS PULLED BEFORE the long/short arg checks, so
+        // it doesn't need to be assigned to anything.
+        // It is needed by prinhelp() though
+        .full = { "", NULL },
+        .descr = "options end",
+        .helptext = {
+            "Stop looking for options, force interpretation",
+            "    of arguments to options.",
+            NULL,
+        }
+    },
+    {
+        .control = 'h',
+        .header = "ABOUT\000\000",
+    },
+    {
+        .control = 'u',
+        .is_action = 1,
+        .full = { "version", NULL },
+        .ltr  = { 'V', 0 },
+        .int_dest = &opt.wantversion,
+        .helptext = { "Print version number (" VERSION ") and exit.", NULL }
+    },
+    {
+        .control = 'u',
+        .is_action = 1,
+        .full = { "license", NULL },
+        .ltr  = { 'L', 0 },
+        .int_dest = &opt.wantlicense,
+        .helptext = { "Print license and exit.", NULL }
+    },
+    {
+        .control = 'u',
+        .is_action = 1,
+        .full = { "help", NULL },
+        .ltr  = { 'h', 0 },
+        .int_dest = &opt.wanthelp,
+        .helptext = { "This help.", NULL }
+    },
+    {
+        .control = 'e',
+    }
+};
 
 char background_var[] = "TERM_BG";
 char termname_var[] = "TERMID";
@@ -124,9 +319,29 @@ prinusage(void)
     if ( opt.wanthelp ) {
         out = stdout;
     }
-    fprintf(out,
-            "%s [!] [-t] [-2] [-3] [-b] [-p] [-c <nnn>] [-d <nnnn>] [-s] [-v]\n",
-           opt.argv0 );
+    fprintf( out, "%s", opt.argv0 );
+    for ( int cx = 0; ; cx++ ) {
+        if ( ( Options[cx].control ) && ( 'e' == Options[cx].control ) ) {
+            // 'e' END of STRuCTURE
+            break;
+        }
+        else if ( ! Options[cx].control ) {
+            // 'u' Suppress from `usage` output
+            //     note how this isn't defined anywhere.
+            if ( Options[cx].ltr[0] ) {
+                if ( Options[cx].want ) {
+                    fprintf( out,
+                            " [-%c <%s>]",
+                            Options[cx].ltr[0],
+                            Options[cx].want
+                           );
+                } else {
+                    fprintf( out, " [-%c]", Options[cx].ltr[0] );
+                }
+            }
+        }
+    }
+    fprintf(out, "\n" );
     fprintf(out, "    OR\n");
     fprintf(out, "%s --help | --version | --license\n",
                  opt.argv0 );
@@ -586,99 +801,188 @@ int is_vtxxx ( const char * term )
     return is_matchlist( term, term_list );
 }
 
+int
+_arg_find_long( char *in )
+{
+    int ret = -1;
+
+    for ( int cx = 0; ; cx++ ) {
+        if ( 'e' == Options[cx].control ) {
+            break;
+        }
+        for ( int dx = 0; ; dx++ ) {
+            if ( NULL == Options[cx].full[dx] ) {
+                break;
+            }
+            char *s = Options[cx].full[dx];
+            if ( strlen( s ) ) {
+                if ( 0 == sncmp(in, s, strlen(s)) ) {
+                    ret = cx;
+                }
+            }
+        }
+    }
+
+    return ret;
+}
+
+int
+_arg_find_short( char in )
+{
+    int ret = -1;
+
+    for ( int cx = 0; ; cx++ ) {
+        if ( 'e' == Options[cx].control ) {
+            break;
+        }
+        for ( int dx = 0; ; dx++ ) {
+            if ( 0 == Options[cx].ltr[dx] ) {
+                break;
+            }
+            if ( in == Options[cx].ltr[dx] ) {
+                ret = cx;
+            }
+        }
+    }
+
+    return ret;
+}
+
+int
+_arg_valid( int index, char *val )
+{
+    char indic = Options[index].indic;
+    char *endptr = NULL;
+
+    switch(indic) {
+        case 'p':
+            opt.custom_print = val;
+            DEBUGOUT("Value '%s' for %s is set\n",
+                    val,
+                    ( Options[index].descr?
+                        Options[index].descr:
+                        Options[index].full[0] )
+                    );
+            break;
+        case 'Z':
+            opt.var = val;
+            DEBUGOUT("Value '%s' for %s is set\n",
+                    val,
+                    ( Options[index].descr?
+                        Options[index].descr:
+                        Options[index].full[0] )
+                    );
+            break;
+        case 'o':
+            opt.term = val;
+            DEBUGOUT("Value '%s' for %s is set\n",
+                    val,
+                    ( Options[index].descr?
+                        Options[index].descr:
+                        Options[index].full[0] )
+                    );
+            break;
+        case 'c':
+            int getcolor = strtol( val, &endptr, 10 );
+            if (   ( endptr != val )
+                && ( endptr - val == strlen(val) )  )
+            {
+                opt.getcolor = 1;
+                opt.color_num = getcolor;
+                DEBUGOUT("--color [%i] ACTION requested.\n", opt.color_num);
+            } else {
+                opt.needhelp = 1;
+                return 1;
+            }
+            break;
+        case 'd':
+            char *endptr = NULL;
+            int getdelay = strtol( val, &endptr, 10 );
+            if (   ( endptr != val )
+                && ( endptr - val == strlen(val) )  )
+            {
+                if ( 0 >= getdelay ) {
+                    opt.needhelp = 1;
+                    return 1;
+                } else {
+                    opt.delay = getdelay;
+                    DEBUGOUT("--delay [%li].\n", opt.delay);
+                }
+            }
+            break;
+        default:
+            return 1;
+    }
+    return 0;
+}
+
 void
 prinhelp(void)
 {
-    const char * actions = "\
-\n\
-  ACTIONS:\n\
-\n\
-    -t\n\
-    -1\n\
-    --term      Ask for terminal ident 'primary DA'\n\
-\n\
-    -2\n\
-    --term2     Ask for terminal ident 'secondary DA'\n\
-\n\
-    -3\n\
-    --term3     Ask for terminal ident 'tertiary DA'\n\
-\n\
-    -b\n\
-    --bg        Ask for terminal background color\n\
-\n\
-    -c <nnn>\n\
-    --color <nnn>\n\
-                Ask for the RGB of a color by number.\n\
-\n\
-    -p <s>\n\
-    --printf <s>\n\
-                Print custom query.\n\
-                String escapes will be expanded.\n\
-";
-
-    const char * debug_actions = "\
-\n\
-    --erase     Print 'erase current line' sequence,\n\
-                    and exit immediately.\n\
-";
-
-    const char * options = "\
-\n\
-  OPTIONS:\n\
-\n\
-    !           Ignore TERM env, asks as if xterm.\n\
-\n\
-    -d <nnnn>\n\
-    --delay <nnnn>\n\
-                Milliseconds to wait for first reply.\n\
-                default: 500 ( 0.5 seconds ).\n\
-\n\
-    --var <name>\n\
-                Variable name for shell readable output.\n\
-                Only used for first output if multiple.\n\
-\n\
-    -s\n\
-    --stats     Print stats info after read response.\n\
-\n\
-    -v\n\
-    --verbose   Extra output.\n\
-";
-
-    const char * debug_options = "\
-\n\
-    -o </dev/tt...>\n\
-    --tty </dev/tt...>\n\
-                Open this instead of current term.\n\
-                Probably won't work.\n\
-";
-
-    const char * about = "\
-\n\
-  ABOUT:\n\
-\n\
-    -L\n\
-    --license   Print license and exit.\n\
-\n\
-    -V\n\
-    --version   Print version number (" VERSION ") and exit.\n\
-\n\
-    -h\n\
-    --help      This help.\n\
-";
-
     FILE *out = stderr;
     if ( opt.wanthelp ) {
         out = stdout;
     }
-    fprintf(out, "%s", actions);
-    if ( opt.debug ) {
-        fprintf(out, "%s", debug_actions);
+    fprintf( out, IDENT " Version " VERSION "\n\n" );
+    fprintf( out, "Copyright (c) " C_YEARS ", by\n" AUTHORS "\n" );
+    prinusage();
+    fprintf( out, "\nQueries Terminal for various settings.\n" );
+    fprintf( out, "short options can be bundled.\n" );
+    for ( int cx = 0; ; cx++ ) {
+        if ( ( Options[cx].control ) && ( 'e' == Options[cx].control ) ) {
+            // 'e' END of STRuCTURE
+            break;
+        }
+        else if ( ( Options[cx].control )
+               && ( 'd' == Options[cx].control )
+               && ( ! opt.debug ) )
+        {
+            // 'd' Help Output option only if apt.debug is set.
+            ;
+        }
+        else if ( ( Options[cx].control ) && ( 'H' == Options[cx].control ) ) {
+            // 'H' Help Output HEADER only if opt.debug is set.
+            if ( opt.debug ) {
+                fprintf( out, "\n  %s:\n", Options[cx].header );
+            }
+        }
+        else if ( ( Options[cx].control ) && ( 'h' == Options[cx].control ) ) {
+            // 'h' Help Output HEADER
+            fprintf( out, "\n  %s:\n", Options[cx].header );
+        } else {
+            fprintf( out, "\n" );
+            for ( int dx = 0; ; dx++ ) {
+                if ( 0 == Options[cx].ltr[dx] ) {
+                    break;
+                }
+                if ( Options[cx].want ) {
+                    fprintf( out, "    -%c <%s>\n",
+                            Options[cx].ltr[dx],
+                            Options[cx].want );
+                } else {
+                    fprintf( out, "    -%c\n", Options[cx].ltr[dx] );
+                }
+            }
+            for ( int dx = 0; ; dx++ ) {
+                if ( NULL == Options[cx].full[dx] ) {
+                    break;
+                }
+                if ( Options[cx].want ) {
+                    fprintf( out, "    --%s <%s>\n",
+                            Options[cx].full[dx],
+                            Options[cx].want );
+                } else {
+                    fprintf( out, "    --%s\n", Options[cx].full[dx] );
+                }
+            }
+            for ( int dx = 0; ; dx++ ) {
+                if ( NULL == Options[cx].helptext[dx] ) {
+                    break;
+                }
+                fprintf( out, "        %s\n", Options[cx].helptext[dx] );
+            }
+        }
     }
-    fprintf(out, "%s", options);
-    if ( opt.debug ) {
-        fprintf(out, "%s", debug_options);
-    }
-    fprintf(out, "%s", about);
     if ( opt.wanthelp ) {
         fprintf(out, "\n");
         if ( 0 != strcmp( getenv("TERM"), opt.envterm ) ) {
@@ -688,6 +992,104 @@ prinhelp(void)
     }
 
     return;
+}
+
+int
+zero_int( int *arry, int max )
+{
+    int ret = 0;
+    while ( ret < max ) {
+        arry[ret++] = 0;
+    }
+    return(ret);
+}
+
+int
+push_int( int *arry, int next, int max )
+{
+    int ret = 0;
+    while( 0 != arry[ret] ) {
+        ret++;
+        if ( ret > max ) {
+            return -1;
+        }
+    }
+    arry[ret] = next;
+    int rest = 1 + ret;
+    while ( rest < max ) {
+        arry[rest++] = 0;
+    }
+    return( ret );
+}
+
+int
+shift_int( int *arry, long max )
+{
+    int ret = 0;
+    int go  = 1;
+
+    if ( ( arry ) && ( 0 != arry[0] ) ) {
+        ret = arry[0];
+        for ( int cx = 1; cx < max; cx++ ) {
+            if ( go ) {
+                arry[cx - 1] = arry[cx];
+                if ( 0 == arry[cx] ) {
+                    go = 0;
+                }
+            }
+            arry[cx] = 0;
+        }
+    }
+
+    return( ret );
+}
+
+int
+zero_ch( char *arry, int max )
+{
+    int ret = 0;
+    while ( ret < max ) {
+        arry[ret++] = 0;
+    }
+    return(ret);
+}
+
+int
+push_ch( char *arry, char next, long max )
+{
+    int ret = strlen(arry);
+    char put[2];
+    put[0] = next;
+    put[1] = 0;
+    if ( ret < max ) {
+        strncat( arry, put, max );
+        ret++;
+    } else {
+        return -1;
+    }
+    return( ret );
+}
+
+char
+shift_ch( char *arry, long max )
+{
+    char ret = 0;
+    int  go  = 1;
+
+    if ( ( arry ) && ( 0 != arry[0] ) ) {
+        ret = arry[0];
+        for ( int cx = 1; cx < max; cx++ ) {
+            if ( go ) {
+                arry[cx - 1] = arry[cx];
+                if ( 0 == arry[cx] ) {
+                    go = 0;
+                }
+            }
+            arry[cx] = 0;
+        }
+    }
+
+    return( ret );
 }
 
 int
@@ -701,272 +1103,155 @@ args( int argc, char *argv[] )
     opt.envterm = getenv("TERM");
     opt.argv0   = argv[0];
     opt.term    = ttyname(STDIN_FILENO);
+    int needarg[BUFSIZ+1];
+    int fromarg[BUFSIZ+1];
+    zero_int(needarg, BUFSIZ+1 );
+    zero_int(fromarg, BUFSIZ+1 );
+    int  arg_process = 1;
 
     /* Walk the commandline */
     for ( int cx=1; cx < argc; cx++ ) {
-        if (
-            (      ( ( strlen("-h") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("-h", argv[cx]) ) )
-            ) || (
-                   ( ( strlen("--help") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("--help", argv[cx]) ) )
-            ) )
+
+        /* CHECK for stop processing        */
+        if (   ( strlen("--") == strlen(argv[cx]) )
+            && ( 0 == strncmp("--", argv[cx], strlen("--") + 1) ) )
         {
-            opt.wanthelp = 1;
-            action_requested++;
-            DEBUGOUT("--help ACTION requested.\n", NULL);
+            arg_process = 0;
         }
-        else if ( 0 == strcmp("!", argv[cx] ) ) {
+        /* CHECK for standalone '!'         */
+        else if (  ( arg_process )
+                && ( 1 == strlen( argv[cx] ) )
+                && ( '!' == argv[cx][0] ) )
+        {
             opt.ignoreterm = 1;
             opt.envterm = "xterm";
             DEBUGOUT("! forcing TERM actions for [%s]\n", opt.envterm);
         }
-        else if (
-            (      ( ( strlen("-b") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("-b", argv[cx]) ) )
-            ) || (
-                   ( ( strlen("--bg") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("--bg", argv[cx]) ) )
-            ) || (
-                   ( ( strlen("--background") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("--background", argv[cx]) ) )
-            ) )
+        /* CHECK for long options           */
+        else if ( ( arg_process )
+               && ( strlen("--") < strlen(argv[cx]) )
+               && ( 0 == strncmp("--", argv[cx], 2) ) )
         {
-            opt.background = 1;
-            action_requested++;
-            DEBUGOUT("--bg ACTION requested.\n", NULL);
-        }
-        else if (
-            (      ( ( strlen("-t") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("-t", argv[cx]) ) )
-            ) || (
-                   ( ( strlen("--term") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("--term", argv[cx]) ) )
-            ) || (
-                   ( ( strlen("-1") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("-1", argv[cx]) ) )
-            ) )
-        {
-            opt.termname = 1;
-            action_requested++;
-            DEBUGOUT("--term ACTION requested.\n", NULL);
-        }
-        else if (
-            (      ( ( strlen("-2") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("-2", argv[cx]) ) )
-            ) || (
-                   ( ( strlen("--term2") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("--term2", argv[cx]) ) )
-            ) )
-        {
-            opt.term2da = 1;
-            action_requested++;
-            DEBUGOUT("--term2 ACTION requested.\n", NULL);
-        }
-        else if (
-            (      ( ( strlen("-3") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("-3", argv[cx]) ) )
-            ) || (
-                   ( ( strlen("--term3") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("--term3", argv[cx]) ) )
-            ) )
-        {
-            opt.term3da = 1;
-            action_requested++;
-            DEBUGOUT("--term3 ACTION requested.\n", NULL);
-        }
-        else if (
-            (      ( ( strlen("-s") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("-s", argv[cx]) ) )
-            ) || (
-                   ( ( strlen("--stat") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("--stat", argv[cx]) ) )
-            ) || (
-                   ( ( strlen("--stats") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("--stats", argv[cx]) ) )
-            ) )
-        {
-            opt.wantstat = 1;
-            DEBUGOUT("--stats requested.\n", NULL);
-        }
-        else if (
-            (      ( ( strlen("-p") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("-p", argv[cx]) ) )
-            ) || (
-                   ( ( strlen("--print") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("--print", argv[cx]) ) )
-            ) || (
-                   ( ( strlen("--printf") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("--printf", argv[cx]) ) )
-            )   )
-        {
-            if ( is_next( argc, cx ) ) {
-                opt.print = 1;
-                opt.custom_print = argv[1 + cx];
-                cx++;
-                DEBUGOUT("--printf [%s] ACTION requested.\n", opt.custom_print);
-            } else {
-                fprintf(stderr,
-                    "Unable to read string after option '%s'\n",
-                    argv[cx]);
-                opt.needhelp = 1;
-            }
-            action_requested++;
-        }
-        else if (
-            (      ( ( strlen("-c") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("-c", argv[cx]) ) )
-            ) || (
-                   ( ( strlen("--color") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("--color", argv[cx]) ) )
-            ) || (
-                   ( ( strlen("--colour") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("--colour", argv[cx]) ) )
-            ) )
-        {
-            int getcolor = 0;
-            int gc_ok    = 0;
-            if ( is_next( argc, cx ) ) {
-                char *endptr = NULL;
-                getcolor = strtol( argv[1 + cx], &endptr, 10 );
-                if (   ( endptr != argv[1 + cx] )
-                    && ( endptr - argv[1 + cx] == strlen(argv[1+cx]) )  )
-                {
-                    gc_ok = 1;
-                    opt.getcolor = 1;
-                    opt.color_num = getcolor;
-                    cx++;
-                    DEBUGOUT("--color [%i] ACTION requested.\n", opt.color_num);
+            int found = -1;
+            if ( 0 <= ( found = _arg_find_long( argv[cx]+2 ) ) ) {
+                if ( Options[found].int_dest ) {
+                    *Options[found].int_dest = 1;
                 }
-            }
-            if ( ! gc_ok ) {
-                fprintf(stderr,
-                    "Unable to read color num after option '%s'\n",
-                    argv[cx]);
-                opt.needhelp = 1;
-            }
-            action_requested++;
-        }
-        else if (
-            (      ( ( strlen("-d") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("-d", argv[cx]) ) )
-            ) || (
-                   ( ( strlen("--delay") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("--delay", argv[cx]) ) )
-            ) )
-        {
-            int getdelay = 0;
-            int gd_ok    = 0;
-            if ( is_next( argc, cx ) ) {
-                char *endptr = NULL;
-                getdelay = strtol( argv[1 + cx], &endptr, 10 );
-                if (   ( endptr != argv[1 + cx] )
-                    && ( endptr - argv[1 + cx] == strlen(argv[1+cx]) )  )
-                {
-                    if ( 0 >= getdelay ) {
-                        fprintf(stderr,
-                            "Not a valid delay '%s' for option '%s'\n",
-                            argv[cx+1], argv[cx]);
-                        opt.needhelp = 1;
+                char *descr = ( Options[found].descr?
+                                 Options[found].descr:
+                                 Options[found].full[0] );
+                if ( Options[found].is_action ) {
+                    DEBUGOUT("%s --%s ACTION requested.\n",
+                           descr, argv[cx]+2, NULL);
+                    action_requested++;
+                } else {
+                    DEBUGOUT("%s --%s requested.\n",
+                           descr, argv[cx]+2, NULL);
+                }
+                if ( Options[found].want ) {
+                    char * eq  = index(argv[cx], '=');
+                    if ( eq ) {
+                        eq++;
+                        if ( _arg_valid( found, eq ) ) {
+                            fprintf(stderr,
+                                    "Not a valid %s '%s' for option '%s'\n",
+                                    ( Options[found].descr?
+                                       Options[found].descr:
+                                       Options[found].full[0] ),
+                                    eq,
+                                    argv[cx]
+                                   );
+                        }
                     } else {
-                        opt.delay = getdelay;
-                        DEBUGOUT("--delay [%li].\n", opt.delay);
+                        if ( 0 > push_int( needarg, found, BUFSIZ ) ) {
+                            fprintf( stderr,
+"Too many value requiring options requested at arg %d, '%s'\n",
+                                    cx, argv[cx] );
+                            exit( 1 );
+                        } else {
+                            push_int( fromarg, cx, BUFSIZ );
+                        }
                     }
-                    cx++;
-                    gd_ok = 1; /* Even if not, error already handled! */
                 }
-            }
-            if ( ! gd_ok ) {
-                fprintf(stderr,
-                    "Unable to read delay after option '%s'\n",
-                    argv[cx]);
-                opt.needhelp = 1;
-            }
-        }
-        else if ( (
-                   ( ( strlen("--var") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("--var", argv[cx]) ) )
-            ) )
-        {
-            if ( is_next( argc, cx ) ) {
-                opt.var = argv[++cx];
-                DEBUGOUT("--var OVERRIDE [%s].\n", opt.var);
             } else {
-                fprintf(stderr,
-                    "Unable to read outvar after option '%s'\n",
-                    argv[cx]);
+                fprintf( stderr, "Unknown option %d: [%s]\n", cx, argv[cx] );
                 opt.needhelp = 1;
             }
-        }
-        else if (
-            (      ( ( strlen("-o") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("-o", argv[cx]) ) )
-            ) || (
-                   ( ( strlen("--tty") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("--tty", argv[cx]) ) )
-            ) )
+        } // END check for long options
+        /* CHECK for short options           */
+        else if ( ( arg_process )
+               && ( 1 < strlen(argv[cx]) )
+               && ( '-' == argv[cx][0] ) )
         {
-            if ( is_next( argc, cx ) ) {
-                cx++;
-                opt.term = argv[cx];
-                DEBUGOUT("OPEN OVERRIDE [%s] (probably won't work).\n", opt.term);
-            } else {
+            for ( int dx=1; dx < strlen(argv[cx]); dx++ ) {
+                int found = -1;
+                if ( 0 <= ( found = _arg_find_short( argv[cx][dx] ) ) ) {
+                    if ( Options[found].int_dest ) {
+                        *Options[found].int_dest = 1;
+                    }
+                    char *descr = ( Options[found].descr?
+                                     Options[found].descr:
+                                     Options[found].full[0] );
+                    if ( Options[found].is_action ) {
+                        DEBUGOUT("%s -%c ACTION requested.\n",
+                                descr, argv[cx][dx], NULL);
+                        action_requested++;
+                    } else {
+                        DEBUGOUT("%s -%c requested.\n",
+                               descr, argv[cx][dx], NULL);
+                    }
+                    if ( Options[found].want ) {
+                        if ( 0 > push_int( needarg, found, BUFSIZ ) ) {
+                            fprintf( stderr,
+"Too many value requiring options at arg %d, '%c' in '%s'\n",
+                                cx, argv[cx][dx], argv[cx] );
+                            exit( 1 );
+                        } else {
+                            push_int( fromarg, cx, BUFSIZ );
+                        }
+                    }
+                } else {
+                    fprintf( stderr, "Unknown option %d: [%s] char '%c'\n",
+                            cx, argv[cx], argv[cx][dx] );
+                    opt.needhelp = 1;
+                }
+            } // END walk single short argument
+        } // END check for short options
+        /* PULL anything left if I need arguments */
+        else if ( 0 != needarg[0] ) {
+            // yes, I need at least one argument!
+            int next_arg = shift_int( needarg, BUFSIZ );
+            int from_arg = shift_int( fromarg, BUFSIZ );
+            if ( _arg_valid( next_arg, argv[cx] ) ) {
                 fprintf(stderr,
-                    "Unable to read output term after option '%s'\n",
-                    argv[cx]);
-                opt.needhelp = 1;
+                        "Not a valid %s '%s' for option '%s'\n",
+                        ( Options[next_arg].descr?
+                            Options[next_arg].descr:
+                            Options[next_arg].full[0] ),
+                        argv[cx],
+                        argv[from_arg]
+                    );
             }
-        }
-        else if (
-            (      ( ( strlen("-L") == strlen(argv[cx]) )
-                && ( 0 == strcmp("-L", argv[cx]) ) )
-            ) || (
-                   ( strlen("--li") <= strlen(argv[cx]) )
-                && ( strlen("--license") >= strlen(argv[cx]) )
-                && ( 0 == sncmp("--license", argv[cx], strlen(argv[cx]) ) )
-            )   )
-        {
-            opt.wantlicense = 1;
-            action_requested++;
-            DEBUGOUT("--version ACTION requested.\n", NULL);
-        }
-        else if (
-            (      ( ( strlen("-V") == strlen(argv[cx]) )
-                && ( 0 == strcmp("-V", argv[cx]) ) )
-            ) || (
-                   ( strlen("--vers") <= strlen(argv[cx]) )
-                && ( strlen("--version") >= strlen(argv[cx]) )
-                && ( 0 == sncmp("--version", argv[cx], strlen(argv[cx]) ) )
-            ) )
-        {
-            opt.wantversion = 1;
-            action_requested++;
-            DEBUGOUT("--version ACTION requested.\n", NULL);
-        }
-        else if (
-            (      ( ( strlen("-v") <= strlen(argv[cx]) )
-                && ( 0 == strcmp("-v", argv[cx]) ) )
-            ) || (
-                   ( strlen("--verb") <= strlen(argv[cx]) )
-                && ( strlen("--verbose") >= strlen(argv[cx]) )
-                && ( 0 == sncmp("--verbose", argv[cx], strlen(argv[cx]) ) )
-            ) )
-        {
-            opt.debug = 1;
-            DEBUGOUT("--verbose DEBUGGING ON.\n", NULL);
-        }
-        else if ( ( strlen("--erase") == strlen(argv[cx]) )
-                  && ( 0 == strcmp("--erase", argv[cx] ) ) )
-        {
-            opt.justerase = 1;
-            action_requested++;
-            DEBUGOUT("--erase ACTION (exclusive) ON.\n", NULL);
         } else {
             fprintf( stderr, "Unknown option %d: [%s]\n", cx, argv[cx] );
             opt.needhelp = 1;
         }
+    } //  END walk argv[cx] -- for ( int cx=1; cx < argc; cx++ )
+
+    /* Complain about unfulfilled args */
+    if ( 0 != needarg[0] ) {
+        int next_arg = shift_int( needarg, BUFSIZ );
+        int from_arg = shift_int( fromarg, BUFSIZ );
+        fprintf( stderr, "Missing argument for option %d, '%s' (%c)",
+                from_arg, argv[ from_arg ], next_arg );
+        if ( 0 != needarg[1] ) {
+            fprintf( stderr, " and more.\n" );
+        } else {
+            fprintf( stderr, ".\n" );
+        }
+        opt.needhelp = 1;
     }
-    if ( NULL == opt.envterm )
+    if ( ( NULL == opt.envterm ) || ( 0 == strlen( opt.envterm ) ) )
     {
         opt.envterm = "xterm";
         DEBUGOUT("TERM empty, forcing actions for [%s]\n", opt.envterm);
@@ -1426,16 +1711,6 @@ term_write()
 }
 
 int
-is_next( int argc, int cx )
-{
-    if ( 1 + cx >= argc ) {
-        return 0;
-    } else {
-        return 1;
-    }
-}
-
-int
 readInput( int bufsz, char * buf )
 {
     if ( 0 == bufsz ) {
@@ -1587,7 +1862,7 @@ do_term()
 }
 
 int
-main( int argc, char *argv[] )
+main( int argc, char *argv[], char *env[] )
 {
     args( argc, argv );
 
@@ -1614,7 +1889,7 @@ main( int argc, char *argv[] )
 
     do_term();
 
-    exit(0);
+    return(0);
 }
 
 void
