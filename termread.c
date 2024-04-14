@@ -854,6 +854,11 @@ _arg_valid( int index, char *val )
     char indic = Options[index].indic;
     char *endptr = NULL;
 
+    // NOTE: Apple clang doesn't allow variable create within a switch case
+    //       they were all moved here instead.
+    int   getcolor = 0;
+    int   getdelay = 0;
+
     switch(indic) {
         case 'p':
             opt.custom_print = val;
@@ -883,7 +888,7 @@ _arg_valid( int index, char *val )
                     );
             break;
         case 'c':
-            int getcolor = strtol( val, &endptr, 10 );
+            getcolor = strtol( val, &endptr, 10 );
             if (   ( endptr != val )
                 && ( endptr - val == strlen(val) )  )
             {
@@ -896,8 +901,8 @@ _arg_valid( int index, char *val )
             }
             break;
         case 'd':
-            char *endptr = NULL;
-            int getdelay = strtol( val, &endptr, 10 );
+            endptr = NULL;
+            getdelay = strtol( val, &endptr, 10 );
             if (   ( endptr != val )
                 && ( endptr - val == strlen(val) )  )
             {
