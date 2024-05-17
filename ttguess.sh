@@ -426,11 +426,12 @@ _q_getterm ()
     case "$TERMID" in
         *PuTTY)
             _debug_p "PuTTY response"
-            _TM_EMOJI=1;         export _TM_EMOJI
-            _TM_PUTTY=1;         export _TM_PUTTY
-            _TM_COLORS=256;      export _TM_COLORS
-            _TM_TRUECLR=1;       export _TM_TRUCLR
-            _TM_TRUEMODE=nsterm; export _TM_TRUEMODE
+            _TM_EMOJI=1;       export _TM_EMOJI
+            _TM_PUTTY=1;       export _TM_PUTTY
+            _TM_COLORS=256;    export _TM_COLORS
+            # TRUECLR verified on Windows PuTTY 0.76 (colon ignored)
+            _TM_TRUECLR=1;     export _TM_TRUCLR
+            _TM_TRUEMODE=semi; export _TM_TRUEMODE
             _set_term_fallback_x "putty-256color" "putty" "xterm-256color"
             _TERMSET=1
             ;;
@@ -443,17 +444,29 @@ _q_getterm ()
                 ## Secondary DA (it didn't exist yet), but
                 ## every other terminal emulator gives us SOME
                 ## other response.
-                _debug_p "No response on Secondary DA, probably 'st'"
+                _debug_p "vt102 & no response on Secondary DA, probably 'st'"
                 _TM_COLORS=8;   export _TM_COLORS
                 _set_term_fallback_x st vt102
                 _TERMSET=1
             elif [ '\033[>0;1901;1c' == "${TERM2DA}" ]
             then
-                _debug_p "Secondary DA encountered matches alacrity"
-                _TM_COLORS=256;      export _TM_COLORS
-                _TM_TRUECLR=1;       export _TM_TRUCLR
-                _TM_TRUEMODE=nsterm; export _TM_TRUEMODE
+                _debug_p "vt102 + alacritty response"
+                _TM_COLORS=256;     export _TM_COLORS
+                _TM_TRUECLR=1;      export _TM_TRUCLR
+                _TM_TRUEMODE=colon; export _TM_TRUEMODE
                 _set_term_fallback_x alacritty rio
+                _TERMSET=1
+            elif [ '\033[>0;136;0c' == "${TERM2DA}" ]
+            then
+                # PuTTY if ENQ is not set to PuTTY
+                _debug_p "vt102 + PuTTY response"
+                _TM_EMOJI=1;       export _TM_EMOJI
+                _TM_PUTTY=1;       export _TM_PUTTY
+                _TM_COLORS=256;    export _TM_COLORS
+                # TRUECLR verified on Windows PuTTY 0.76 (colon ignored)
+                _TM_TRUECLR=1;     export _TM_TRUCLR
+                _TM_TRUEMODE=semi; export _TM_TRUEMODE
+                _set_term_fallback_x "putty-256color" "putty" "xterm-256color"
                 _TERMSET=1
             else
                 _debug_p "Unknown vt102 clone."
@@ -506,10 +519,12 @@ _q_getterm ()
                     _set_term_fallback_x konsole
                 else
                     _debug_p "Konsole"
-                    _TM_EMOJI=1;         export _TM_EMOJI
-                    _TM_COLORS=256;      export _TM_COLORS
-                    _TM_TRUECLR=1;       export _TM_TRUCLR
-                    _TM_TRUEMODE=nsterm; export _TM_TRUEMODE
+                    _TM_EMOJI=1;       export _TM_EMOJI
+                    _TM_COLORS=256;    export _TM_COLORS
+                    _TM_TRUECLR=1;     export _TM_TRUCLR
+                    # Internet claims new versions can do colon, but..
+                    #  it doesn't work for me.
+                    _TM_TRUEMODE=semi; export _TM_TRUEMODE
                     _set_term_fallback_x konsole-256color konsole xterm-256color
                 fi
                 _TERMSET=1
@@ -517,20 +532,18 @@ _q_getterm ()
             then
                 # NeXT or macOS Terminal.app
                 _debug_p "Terminal.app"
-                _TM_EMOJI=1;         export _TM_EMOJI
-                _TM_COLORS=256;      export _TM_COLORS
-                _TM_TRUECLR=1;       export _TM_TRUCLR
-                _TM_TRUEMODE=nsterm; export _TM_TRUEMODE
+                _TM_EMOJI=1;        export _TM_EMOJI
+                _TM_COLORS=256;     export _TM_COLORS
                 _set_cterm_fallback nsterm xterm-256color xterm
                 _TERMSET=1
             elif [ '\033[>0;95;0c' == "${TERM2DA}"  -a "0" = "$_TERMSET" ]
             then
                 # iTerm2
                 _debug_p "iTerm2.app"
-                _TM_COLORS=256;      export _TM_COLORS
-                _TM_ITERM2=1;        export _TM_ITERM2
-                _TM_TRUECLR=1;       export _TM_TRUCLR
-                _TM_TRUEMODE=nsterm; export _TM_TRUEMODE
+                _TM_COLORS=256;     export _TM_COLORS
+                _TM_ITERM2=1;       export _TM_ITERM2
+                _TM_TRUECLR=1;      export _TM_TRUCLR
+                _TM_TRUEMODE=colon; export _TM_TRUEMODE
                 _set_term_fallback_x iterm2 iTerm2.app xterm-256color
                 _TERMSET=1
             else
@@ -548,22 +561,22 @@ _q_getterm ()
             # a non=VTE terminal with this primary DA.
             _debug_p "vt500 - VTE response (Gnome, Xfce4)"
             # Should respond to TERM_BG and COLOR
-            _TM_EMOJI=1;         export _TM_EMOJI
-            _TM_COLORS=256;      export _TM_COLORS
-            _TM_TRUECLR=1;       export _TM_TRUCLR
-            _TM_TRUEMODE=nsterm; export _TM_TRUEMODE
+            _TM_EMOJI=1;        export _TM_EMOJI
+            _TM_COLORS=256;     export _TM_COLORS
+            _TM_TRUECLR=1;      export _TM_TRUCLR
+            _TM_TRUEMODE=colon; export _TM_TRUEMODE
             _set_term_fallback_x vte-256color gnome-256color vte gnome \
                 xterm-256color
             _TERMSET=1
             ;;
         '\033[?65;4;6;18;22c')
             _debug_p "wezterm with sixel"
-            _TM_EMOJI=1;         export _TM_EMOJI
-            _TM_COLORS=256;      export _TM_COLORS
-            _TM_TRUECLR=1;       export _TM_TRUCLR
-            _TM_TRUEMODE=nsterm; export _TM_TRUEMODE
-            _TM_KITTY=1;         export _TM_KITTY
-            _TM_ITERM2=1;        export _TM_ITERM2
+            _TM_EMOJI=1;        export _TM_EMOJI
+            _TM_COLORS=256;     export _TM_COLORS
+            _TM_TRUECLR=1;      export _TM_TRUCLR
+            _TM_TRUEMODE=colon; export _TM_TRUEMODE
+            _TM_KITTY=1;        export _TM_KITTY
+            _TM_ITERM2=1;       export _TM_ITERM2
             _set_cterm_fallback wezterm-direct wezterm \
                 vt525 vt525-basic vt520 vt520-basic \
                 vt420-basic vt420 vt320-basic vt320 xterm
@@ -579,9 +592,9 @@ _q_getterm ()
             ;;
         '\033[?64;1;2;6;9;15;16;17;18;21;22;28c')
             _debug_p "xterm in vt420 mode"
-            _TM_COLORS=256;     export _TM_COLORS
-            _TM_TRUECLR=1;      export _TM_TRUCLR
-            _TM_TRUEMODE=xterm; export _TM_TRUEMODE
+            _TM_COLORS=256;    export _TM_COLORS
+            _TM_TRUECLR=1;     export _TM_TRUCLR
+            _TM_TRUEMODE=semi; export _TM_TRUEMODE
             _set_term_fallback_x xterm-256color
             _TERMSET=1
             ;;
@@ -590,6 +603,10 @@ _q_getterm ()
             _TM_EMOJI=0;    export _TM_EMOJI
             _TM_NOSTATUS=1; export _TM_EMOJI
             _TM_COLORS=256; export _TM_COLORS
+            # Verified on Ubuntu 22.04 zutty
+            _TM_TRUECLR=1; export _TM_TRUCLR
+            # Colon prints junk (not just ignored)
+            _TM_TRUEMODE=semi; export _TM_TRUEMODE
             _set_term_fallback_x zutty vt420-basic vt420 xterm-256color
             _TERMSET=1
             ;;
@@ -645,13 +662,7 @@ _q_getterm ()
         '\033[?62;1;4c')
             if [ '\033[>0;115;0c' = "$TERM2DA" ]
             then
-                _debug_p "Konsole"
-                _TM_EMOJI=1;    export _TM_EMOJI
-                _TM_COLORS=256; export _TM_COLORS
-                _set_term_fallback_x konsole-256color konsole xterm-256color
-                _TERMSET=1
-            elif [ '\033[>1;115;0c' = "$TERM2DA" ]
-            then
+                # Very old entry, not recently validated
                 _debug_p "Konsole"
                 _TM_EMOJI=1;    export _TM_EMOJI
                 _TM_COLORS=256; export _TM_COLORS
@@ -668,7 +679,7 @@ _q_getterm ()
             _debug_p "vt200 or Clone"
             case "$TERM2DA" in
                 '\033[>0;95;0c')
-                    _debug_p "Secondary DA looks like iTerm2"
+                    _debug_p "Secondary DA looks like older iTerm2"
                     _TM_COLORS=256; export _TM_COLORS
                     _TM_EMOJI=1;    export _TM_EMOJI
                     _set_cterm_fallback iterm2 xterm-vt220 vt220 vt200 xterm
@@ -677,11 +688,12 @@ _q_getterm ()
                 '\033[>1;4000;'*c)
                     # ;15c (Ubuntu) and ;29c (macOS), so I'm starring it
                     _debug_p "Secondary DA looks like kitty"
-                    _TM_COLORS=256;      export _TM_COLORS
-                    _TM_EMOJI=1;         export _TM_EMOJI
-                    _TM_KITTY=1;         export _TM_KITTY
-                    _TM_TRUECLR=1;       export _TM_TRUCLR
-                    _TM_TRUEMODE=nsterm; export _TM_TRUEMODE
+                    _TM_COLORS=256;     export _TM_COLORS
+                    _TM_EMOJI=1;        export _TM_EMOJI
+                    _TM_KITTY=1;        export _TM_KITTY
+                    # Verified on Ubuntu 22.04 kitty
+                    _TM_TRUECLR=1;      export _TM_TRUCLR
+                    _TM_TRUEMODE=colon; export _TM_TRUEMODE
                     _set_cterm_fallback xterm-kitty kitty-direct kitty \
                         xterm-vt240 vt240 xterm-vt220 vt220 vt200 \
                         xterm
@@ -698,10 +710,10 @@ _q_getterm ()
             ;;
         '\033[?61;6;7;22;23;24;28;32;42c')
             _debug_p "Microsoft Terminal (since 1.18.1421.0)"
-            _TM_COLORS=256;      export _TM_COLORS
-            _TM_EMOJI=1;         export _TM_EMOJI
-            _TM_TRUECLR=1;       export _TM_TRUCLR
-            _TM_TRUEMODE=nsterm; export _TM_TRUEMODE
+            _TM_COLORS=256;    export _TM_COLORS
+            _TM_EMOJI=1;       export _TM_EMOJI
+            _TM_TRUECLR=1;     export _TM_TRUCLR
+            _TM_TRUEMODE=semi; export _TM_TRUEMODE
             _set_cterm_fallback ms-terminal ms-vt-utf8 \
                 ms-vt100+ ms-vt100-color xterm-256color \
                 xterm
@@ -709,10 +721,11 @@ _q_getterm ()
             ;;
         '\033[?61;6;7;21;22;23;24;28;32;42c')
             _debug_p "Microsoft Terminal (since 1.19.10573.0)"
-            _TM_COLORS=256;      export _TM_COLORS
-            _TM_EMOJI=1;         export _TM_EMOJI
-            _TM_TRUECLR=1;       export _TM_TRUCLR
-            _TM_TRUEMODE=nsterm; export _TM_TRUEMODE
+            _TM_COLORS=256;     export _TM_COLORS
+            _TM_EMOJI=1;        export _TM_EMOJI
+            # Verified on Windows 11
+            _TM_TRUECLR=1;      export _TM_TRUCLR
+            _TM_TRUEMODE=colon; export _TM_TRUEMODE
             _set_cterm_fallback ms-terminal ms-vt-utf8 \
                 ms-vt100+ ms-vt100-color xterm-256color \
                 xterm
