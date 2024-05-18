@@ -14,8 +14,10 @@ sbindir:=sbin/
 DESTDIR:=
 INSTALLDIR:=$(DESTDIR)$(exec_prefix)$(sbindir)
 
-FINAL=termread
-SOURCE=termread.c
+FINAL0=termread
+FINAL1=truecolor
+SOURCE0=termread.c
+SOURCE1=truecolor.c
 X_DEPS=Makefile
 
 SYS=$(shell uname -s)
@@ -32,25 +34,39 @@ ifeq ($(shell test "Darwin" = $(SYS) -a $(MAJ_VER) -ge 20; echo $$?), 0)
 # Darwin 20 is Big Sur, Big Sur is the earliest macOS that supported arm64.
 # Any build platform here (x86_64 or arm64) will be able to target
 # a universal binary with arm64-Big Sur and x86_64-Yosemite.
-INTERIM=universal.$(FINAL)
+INTERIM0=universal.$(FINAL0)
+INTERIM1=universal.$(FINAL1)
 else ifeq ($(shell test "Darwin" = $(SYS) -a $(MAJ_VER) -lt 14; echo $$?), 0)
 # This is a mac running Mavericks (10.9, D13) or OLDER.
 # Treating this the same as Linux, where we have no -target specified
 # and just expect the compiler will do the right thing.
-INTERIM=default.$(FINAL)
+INTERIM0=default.$(FINAL0)
+INTERIM1=default.$(FINAL1)
 else ifeq ($(shell test "Darwin" = $(SYS); echo $$?), 0)
 # This is a macOS between Yosemite (10.10, D14) and Catalina (10.15, D19)
 # Yosemite is the earliest target macOS I own (or have access to),
-INTERIM=$(ARCH).$(FINAL)
+INTERIM0=$(ARCH).$(FINAL0)
+INTERIM1=$(ARCH).$(FINAL1)
 else
-INTERIM=default.$(FINAL)
+INTERIM0=default.$(FINAL0)
+INTERIM1=default.$(FINAL1)
 endif
 
-$(FINAL): $(INTERIM)
-	cp $(INTERIM) $(FINAL)
+.PHONY: all
 
-universal.$(FINAL): x86_64.$(FINAL) arm64.$(FINAL)
-	lipo -create -output universal.$(FINAL) x86_64.$(FINAL) arm64.$(FINAL)
+all: $(FINAL0) $(FINAL1)
+
+$(FINAL0): $(INTERIM0)
+	cp $(INTERIM0) $(FINAL0)
+
+$(FINAL1): $(INTERIM1)
+	cp $(INTERIM1) $(FINAL1)
+
+universal.$(FINAL0): x86_64.$(FINAL0) arm64.$(FINAL0)
+	lipo -create -output universal.$(FINAL0) x86_64.$(FINAL0) arm64.$(FINAL0)
+
+universal.$(FINAL1): x86_64.$(FINAL1) arm64.$(FINAL1)
+	lipo -create -output universal.$(FINAL1) x86_64.$(FINAL1) arm64.$(FINAL1)
 
 # x86_64 target is Yosemite (10.10, D14)
 # Yosemite is the earliest target macOS I own (or have access to),
@@ -58,35 +74,45 @@ universal.$(FINAL): x86_64.$(FINAL) arm64.$(FINAL)
 # won't release what I cannot test.
 # So that's where I'm pegging x86_64 specific targets.
 # There's a comment at the end of the file for further info...
-x86_64.$(FINAL): $(SOURCE) $(X_DEPS)
-	$(CC) $(CCFLAGS) -o x86_64.$(FINAL) $(SOURCE) $(TARGET_X86_64)
+x86_64.$(FINAL0): $(SOURCE0) $(X_DEPS)
+	$(CC) $(CCFLAGS) -o x86_64.$(FINAL0) $(SOURCE0) $(TARGET_X86_64)
+
+x86_64.$(FINAL1): $(SOURCE0) $(X_DEPS)
+	$(CC) $(CCFLAGS) -o x86_64.$(FINAL1) $(SOURCE0) $(TARGET_X86_64)
 
 # OS X 11, Big Sur is the first arm64 capable version, so it is the lowest
 # target possible for arm64.
-arm64.$(FINAL): $(SOURCE) $(X_DEPS)
-	$(CC) $(CCFLAGS) -o arm64.$(FINAL) $(SOURCE) $(TARGET_ARM64)
+arm64.$(FINAL0): $(SOURCE0) $(X_DEPS)
+	$(CC) $(CCFLAGS) -o arm64.$(FINAL0) $(SOURCE0) $(TARGET_ARM64)
 
-default.$(FINAL): $(SOURCE) $(X_DEPS)
-	$(CC) $(CCFLAGS) -o default.$(FINAL) $(SOURCE)
+arm64.$(FINAL1): $(SOURCE0) $(X_DEPS)
+	$(CC) $(CCFLAGS) -o arm64.$(FINAL1) $(SOURCE0) $(TARGET_ARM64)
 
-install: $(FINAL)
+default.$(FINAL0): $(SOURCE0) $(X_DEPS)
+	$(CC) $(CCFLAGS) -o default.$(FINAL0) $(SOURCE0)
+
+default.$(FINAL1): $(SOURCE0) $(X_DEPS)
+	$(CC) $(CCFLAGS) -o default.$(FINAL1) $(SOURCE0)
+
+install: $(FINAL0) $(FINAL1)
 	@if [ "sbin/" = "$(INSTALLDIR)" ]; then \
 		echo "Cannot install, prefix= and DESTDIR=, both empty." ; \
 		echo "TRY: $$ make INSTALLDIR=<path> install" ; \
 		false; \
 	elif [ -d "$(INSTALLDIR)" ]; then \
-		echo "install -m 775 -C $(FINAL) $(INSTALLDIR)"; \
-		install -m 775 -C $(FINAL) $(INSTALLDIR); \
+		echo "install -m 775 -C $(FINAL0) $(FINAL1) $(INSTALLDIR)"; \
+		install -m 775 -C $(FINAL0) $(FINAL1) $(INSTALLDIR); \
 	else \
 		echo "Cannot install, 'INSTALLDIR=$(INSTALLDIR)', does not exist." ; \
 		false ;\
 	fi
 
 clean:
-	-rm -f $(FINAL).o $(FINAL)*.obj *.$(FINAL)
+	-rm -f $(FINAL0).o $(FINAL0)*.obj *.$(FINAL0)
+	-rm -f $(FINAL1).o $(FINAL1)*.obj *.$(FINAL1)
 
 dist-clean: clean
-	-rm -f $(FINAL)
+	-rm -f $(FINAL0) $(FINAL1)
 
 # FROM WIKIPEDIA...
 #

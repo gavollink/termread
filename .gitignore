@@ -1,4 +1,7 @@
 termread
 termread.o
+truecolor
+truecolor.o
+*.truecolor
 *.termread
 *.swp
