@@ -116,6 +116,71 @@ _e_setsyscmd ()
     return 0
 }
 
+########################################
+# Sets No Global
+_cleanpath_pre ()
+{
+    if ! _e_setecho -b; then return 1; fi
+    SCP_OUTPUT="$1"
+    shift
+
+    if [ -x "${BASE}/sbin/cleanpath" ]
+    then
+        CP="${BASE}/sbin/cleanpath -Pb ${SCP_OUTPUT} --"
+    elif [ -x "${HOME}/sbin/cleanpath" ]
+    then
+        CP="${HOME}/sbin/cleanpath -Pb ${SCP_OUTPUT} --"
+    else
+        CP="sh_cleanpath ${SCP_OUTPUT} __PRE__"
+    fi
+
+    export $SCP_OUTPUT
+
+    while [ ! -z "$1" ]
+    do
+        TWANT=`${CP} "$1"`
+        shift
+    done
+
+    export $SCP_OUTPUT
+
+    echo "$TWANT"
+    unset TWANT
+    unset P
+    unset CP
+    unset SCP_OUTPUT
+}
+
+########################################
+# Sets No Global
+_cleanpath_post ()
+{
+    if ! _e_setecho -b; then return 1; fi
+    SCP_OUTPUT="$1"
+    shift
+
+    if [ -x "${BASE}/sbin/cleanpath" ]
+    then
+        CP="${BASE}/sbin/cleanpath -P ${SCP_OUTPUT} --"
+    elif [ -x "${HOME}/sbin/cleanpath" ]
+    then
+        CP="${HOME}/sbin/cleanpath -P ${SCP_OUTPUT} --"
+    else
+        CP="sh_cleanpath ${SCP_OUTPUT} __POST__"
+    fi
+
+    while [ ! -z "$1" ]
+    do
+        TWANT=`${CP} "$1"`
+        shift
+    done
+
+    echo "$TWANT"
+    unset TWANT
+    unset P
+    unset CP
+    unset SCP_OUTPUT
+}
 my_inpath ()
 {
     if ! _e_setsyscmd sed _SED; then return 1; fi
@@ -165,7 +230,7 @@ my_inpath_first ()
 
 _q_terminfo_dirs ()
 {
-    if [ -z "${TERMINFO_DIRS}" ]
+    if [ -z "${_TM_TERMINFO_DIRS}" ]
     then
         export TERMINFO_DIRS
         TERMINFO_DIRS=`_cleanpath_post TERMINFO_DIRS "/etc/terminfo"`
@@ -174,6 +239,8 @@ _q_terminfo_dirs ()
         TERMINFO_DIRS=`_cleanpath_pre TERMINFO_DIRS "/usr/local/share/terminfo"`
         TERMINFO_DIRS=`_cleanpath_pre TERMINFO_DIRS "${HOME}/.terminfo"`
         export TERMINFO_DIRS
+        _TM_TERMINFO_DIRS=1
+        export _TM_TERMINFO_DIRS
     fi
 }
 
@@ -539,7 +606,7 @@ _q_getterm ()
             elif [ '\033[>0;95;0c' == "${TERM2DA}"  -a "0" = "$_TERMSET" ]
             then
                 # iTerm2
-                _debug_p "iTerm2.app"
+                _debug_p "iTerm2.app up to ver 3.4.x"
                 _TM_COLORS=256;     export _TM_COLORS
                 _TM_ITERM2=1;       export _TM_ITERM2
                 _TM_TRUECLR=1;      export _TM_TRUCLR
@@ -588,6 +655,15 @@ _q_getterm ()
             _set_term_fallback_x vt525-basic vt525 vt520-basic vt520 \
                 vt420-basic vt420 vt320-basic vt320 \
                 vt300 vt220-basic vt220 vt200
+            _TERMSET=1
+            ;;
+        '\033[?64;1;2;4;6;17;18;21;22c')
+            _debug_p "iTerm2 from v 3.5"
+            _TM_COLORS=256;     export _TM_COLORS
+            _TM_ITERM2=1;       export _TM_ITERM2
+            _TM_TRUECLR=1;      export _TM_TRUCLR
+            _TM_TRUEMODE=colon; export _TM_TRUEMODE
+            _set_term_fallback_x iterm2 iTerm2.app xterm-256color
             _TERMSET=1
             ;;
         '\033[?64;1;2;6;9;15;16;17;18;21;22;28c')

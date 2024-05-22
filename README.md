@@ -219,7 +219,22 @@ if `wezterm` is detected).
 `_TM_TRUECOLOR` if the terminal is known to support truecolor (even if the
 termcap doesn't know about it).
 
+`_TM_TRUEMODE` if the terminal is known to support truecolor, this is set to
+`colon` or `semi`.
+
 `TERM` is set to the recommended value (as printed in the output).
+
+# truecolor Utility
+
+This will print truecolor escape codes, using environment `$_TM_TRUEMODE` to
+switch `colon` from the default of `semi`.  This does NO checking for whether
+or not truecolor is actually supported, so this can end up printing junk
+if a terminal doesn't support it.
+
+```
+$ ./truecolor --help
+$ ./truecolor -c xff8210 -s TEST OUTPUT
+```
 
 # Just because
 
