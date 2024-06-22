@@ -667,10 +667,10 @@ _q_getterm ()
             ;;
         '\033[?64;1;2;4;6;17;18;21;22c')
     # \e[?65;*c : VT420 -- iTerm2 v3.5 and up
-            # from macOS m4 iTerm2 version 3.5??
+            # from macOS M1 iTerm2 version 3.5.2 (homebrew)
             #       PRIMARY DA  : \e[?64;1;2;4;6;17;18;21;22c
-            #       SECONDARY DA: \e[>0;95;0c
-            #       TERTIARY DA : <null>
+            #       SECONDARY DA: \e[>41;2500;0c
+            #       TERTIARY DA : \eP!I69547260\e\
             _debug_p "iTerm2 from v 3.5"
             _TM_COLORS=256;     export _TM_COLORS
             _TM_ITERM2=1;       export _TM_ITERM2
