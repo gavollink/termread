@@ -563,7 +563,8 @@ _q_getterm ()
             fi
             ;;
         '\033[?1;2c')
-            # Claims to be a vt100, which could mean...
+    # \e[?1;2c : Claims to be a vt100
+            # vt100 could mean...
             _debug_p "vt100 Primary DA response."
             if [ '\033[>84;0;0c' = "$TERM2DA" ]
             then
@@ -574,6 +575,7 @@ _q_getterm ()
                 _TERMSET=1
             elif [ '\033[>0;115;0c' = "$TERM2DA" ]
             then
+    # \e[?1;2c : Claims to be a vt100
                 # Cool Retro Term or Konsole
                 eval `"${_TERMREAD}" '!' -b`
                 if [ -z "$TERM_BG" ]; then
@@ -597,6 +599,7 @@ _q_getterm ()
                 _TERMSET=1
             elif [ '\033[>1;95;0c' == "${TERM2DA}"  -a "0" = "$_TERMSET" ]
             then
+    # \e[?1;2c : Claims to be a vt100
                 # NeXT or macOS Terminal.app
                 _debug_p "Terminal.app"
                 _TM_EMOJI=1;        export _TM_EMOJI
@@ -605,8 +608,9 @@ _q_getterm ()
                 _TERMSET=1
             elif [ '\033[>0;95;0c' == "${TERM2DA}"  -a "0" = "$_TERMSET" ]
             then
+    # \e[?1;2c : Claims to be a vt100
                 # iTerm2
-                _debug_p "iTerm2.app up to ver 3.4.x"
+                _debug_p "iTerm2.app (vt100 mode) up to ver 3.4.x"
                 _TM_COLORS=256;     export _TM_COLORS
                 _TM_ITERM2=1;       export _TM_ITERM2
                 _TM_TRUECLR=1;      export _TM_TRUCLR
@@ -614,6 +618,7 @@ _q_getterm ()
                 _set_term_fallback_x iterm2 iTerm2.app xterm-256color
                 _TERMSET=1
             else
+    # \e[?1;2c : Claims to be a vt100
                 _TM_EMOJI=0;    export _TM_EMOJI
                 _TM_COLORS=0;   export _TM_COLORS
                 _debug_p "VT100 Primary DA response."
@@ -622,6 +627,7 @@ _q_getterm ()
             fi
             ;;
         '\033[?65;1;9c')
+    # \e[?65;1;9c : VT500 - VTE specific
             # Would try to separate this more but
             # xfce4-terminal and gnome-terminal both
             # respond identically, and I've never found
@@ -637,6 +643,7 @@ _q_getterm ()
             _TERMSET=1
             ;;
         '\033[?65;4;6;18;22c')
+    # \e[?65;4;6;18;22c : VT500 - Wezterm with Sixel specific
             _debug_p "wezterm with sixel"
             _TM_EMOJI=1;        export _TM_EMOJI
             _TM_COLORS=256;     export _TM_COLORS
@@ -650,6 +657,7 @@ _q_getterm ()
             _TERMSET=1
             ;;
         '\033[?65;'*c)
+    # \e[?65;*c : VT500 Clone of Some Sort
             _debug_p "vt500 series or clone"
             _TM_COLORS=0; export _TM_COLORS
             _set_term_fallback_x vt525-basic vt525 vt520-basic vt520 \
@@ -658,15 +666,21 @@ _q_getterm ()
             _TERMSET=1
             ;;
         '\033[?64;1;2;4;6;17;18;21;22c')
+    # \e[?65;*c : VT420 -- iTerm2 v3.5 and up
+            # from macOS m4 iTerm2 version 3.5??
+            #       PRIMARY DA  : \e[?64;1;2;4;6;17;18;21;22c
+            #       SECONDARY DA: \e[>0;95;0c
+            #       TERTIARY DA : <null>
             _debug_p "iTerm2 from v 3.5"
             _TM_COLORS=256;     export _TM_COLORS
             _TM_ITERM2=1;       export _TM_ITERM2
             _TM_TRUECLR=1;      export _TM_TRUCLR
             _TM_TRUEMODE=colon; export _TM_TRUEMODE
-            _set_term_fallback_x iterm2 iTerm2.app xterm-256color
+            _set_cterm_fallback iterm2 iTerm2.app xterm
             _TERMSET=1
             ;;
         '\033[?64;1;2;6;9;15;16;17;18;21;22;28c')
+    # \e[?64;1;2;6;9;15;16;17;18;21;22;28c : VT420 mode of xterm
             _debug_p "xterm in vt420 mode"
             _TM_COLORS=256;    export _TM_COLORS
             _TM_TRUECLR=1;     export _TM_TRUCLR
@@ -675,6 +689,7 @@ _q_getterm ()
             _TERMSET=1
             ;;
         '\033[?64;1;9;15;21;22c')
+    # \e[?64;1;9;15;21;22c : VT420 mode of zutty
             _debug_p "zutty in vt420 mode"
             _TM_EMOJI=0;    export _TM_EMOJI
             _TM_NOSTATUS=1; export _TM_EMOJI
@@ -687,6 +702,7 @@ _q_getterm ()
             _TERMSET=1
             ;;
         '\033[?64;'*c)
+    # \e[?64;*c : VT4XX Clone of Some Sort
             _debug_p "vt420 series or clone"
             _TM_EMOJI=0;  export _TM_EMOJI
             _TM_COLORS=0; export _TM_COLORS
@@ -695,12 +711,14 @@ _q_getterm ()
             _TERMSET=1
             ;;
         '\033[?63;1;2;6;9;15;16;22;28c')
+    # \e[?63;1;2;6;9;15;16;22;28c : VT320 mode of xterm
             _debug_p "xterm in vt320 mode"
             _TM_COLORS=256; export _TM_COLORS
             _set_term_fallback_x xterm-vt320 vt320 vt300 xterm-256color
             _TERMSET=1
             ;;
         '\033[?63;1;2;4;6;9;15;16;22;28c')
+    # \e[?63;1;2;4;6;9;15;16;22;28c : VT340 mode of xterm
             _debug_p "xterm in vt340 mode"
             _TM_COLORS=256; export _TM_COLORS
             _set_term_fallback_x xterm-vt340 vt340 xterm-vt320 \
@@ -708,6 +726,7 @@ _q_getterm ()
             _TERMSET=1
             ;;
         '\033[?63;'*c)
+    # \e[?63;*c : VT3xx Clone of Some Sort
             _debug_p "vt320 or Clone"
             if [ 'xterm-256color' = "$TERM2DA" ]
             then
@@ -723,6 +742,7 @@ _q_getterm ()
             fi
             ;;
         '\033[?62;1;2;4;6;9;15;16;22;28c')
+    # \e[?62;1;2;4;6;9;15;16;22;28c : VT240 mode of xterm
             _debug_p "xterm in vt240 mode ([?62; with feature 4)"
             _TM_COLORS=256; export _TM_COLORS
             _set_term_fallback_x xterm-vt240 vt240 xterm-vt220 \
@@ -730,12 +750,59 @@ _q_getterm ()
             _TERMSET=1
             ;;
         '\033[?62;1;2;6;9;15;16;22;28c')
+    # \e[?62;1;2;6;9;15;16;22;28c : VT220 mode of xterm
             _debug_p "xterm in vt220 mode ([?62; without feature 4)"
             _TM_COLORS=256; export _TM_COLORS
             _set_term_fallback_x xterm-vt220 vt220 vt200 xterm-256color
             _TERMSET=1
             ;;
+        '\033[?62'*';4'*'c')
+    # \e[?62;*4*c : VT240 Clone...
+            echo "VT240 Clone (feature 4)"
+            case "$TERM2DA" in
+                '\033[>0;115;0c')
+                    # Very old entry, not recently validated
+                    _debug_p "Konsole"
+                    _TM_EMOJI=1;    export _TM_EMOJI
+                    _TM_COLORS=256; export _TM_COLORS
+                    _set_term_fallback_x konsole-256color konsole xterm-256color
+                    _TERMSET=1
+                    ;;
+                '\033[>0;95;0c')
+                    # from macOS m4 iTerm2 version 3.4.23...
+                    #       PRIMARY DA  : \e[?62;4c
+                    #       SECONDARY DA: \e[>0;95;0c
+                    #       TERTIARY DA : <null>
+                    _debug_p "iTerm2 (vt240 mode) 3.4.23 or older"
+                    _TM_COLORS=256; export _TM_COLORS
+                    _TM_EMOJI=1;    export _TM_EMOJI
+                    _set_cterm_fallback iterm2 iTerm2.app xterm
+                    _TERMSET=1
+                    ;;
+                '\033[>1;4000;'*c)
+                    # ;15c (Ubuntu) and ;29c (macOS), so I'm starring it
+                    _debug_p "Secondary DA looks like kitty"
+                    _TM_COLORS=256;     export _TM_COLORS
+                    _TM_EMOJI=1;        export _TM_EMOJI
+                    _TM_KITTY=1;        export _TM_KITTY
+                    # Verified on Ubuntu 22.04 kitty
+                    _TM_TRUECLR=1;      export _TM_TRUCLR
+                    _TM_TRUEMODE=colon; export _TM_TRUEMODE
+                    _set_cterm_fallback xterm-kitty kitty-direct kitty \
+                        xterm-vt240 vt240 xterm-vt220 vt220 vt200 \
+                        xterm
+                    _TERMSET=1
+                    ;;
+                default)
+                    _debug_p "Unknown vt240 descendent"
+                    _TM_COLORS=0;   export _TM_COLORS
+                    _set_term_fallback_x vt220-basic
+                    _TERMSET=1
+                    ;;
+            esac
+            ;;
         '\033[?62;1;4c')
+    # \e[?62;1;4c : VT240 Clone...
             if [ '\033[>0;115;0c' = "$TERM2DA" ]
             then
                 # Very old entry, not recently validated
@@ -745,20 +812,21 @@ _q_getterm ()
                 _set_term_fallback_x konsole-256color konsole xterm-256color
                 _TERMSET=1
             else
-                _debug_p "Unknown vt220 descendent"
+                _debug_p "Unknown vt240 descendent"
                 _TM_COLORS=0;   export _TM_COLORS
                 _set_term_fallback_x vt220-basic
                 _TERMSET=1
             fi
             ;;
         '\033[?62;'*c)
+    # \e[?62;*c : VT200 Clone...
             _debug_p "vt200 or Clone"
             case "$TERM2DA" in
                 '\033[>0;95;0c')
-                    _debug_p "Secondary DA looks like older iTerm2"
+                    _debug_p "iTerm2 (vt220 mode) 3.4.23 or older"
                     _TM_COLORS=256; export _TM_COLORS
                     _TM_EMOJI=1;    export _TM_EMOJI
-                    _set_cterm_fallback iterm2 xterm-vt220 vt220 vt200 xterm
+                    _set_cterm_fallback iterm2 iTerm2.app iterm2 xterm-vt220 vt220 vt200 xterm
                     _TERMSET=1
                     ;;
                 '\033[>1;4000;'*c)
@@ -796,6 +864,11 @@ _q_getterm ()
             _TERMSET=1
             ;;
         '\033[?61;6;7;21;22;23;24;28;32;42c')
+            # Microsoft Terminal on Windows 11 v 1.19.10573.0
+            # Microsoft Terminal on Windows 11 v 1.20.11381.0
+            #       TERMID='\033[?61;6;7;21;22;23;24;28;32;42c'; export TERMID;
+            #       TERM2DA='\033[>0;10;1c'; export TERM2DA;
+            #       TERM3DA='\033P!|00000000\033\'; export TERM3DA;
             _debug_p "Microsoft Terminal (since 1.19.10573.0)"
             _TM_COLORS=256;     export _TM_COLORS
             _TM_EMOJI=1;        export _TM_EMOJI
