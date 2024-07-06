@@ -1,7 +1,7 @@
+configure.mk
 termread
-termread.o
 truecolor
-truecolor.o
 *.truecolor
 *.termread
-*.swp
+*.OBJS
+.*.sw[op]
