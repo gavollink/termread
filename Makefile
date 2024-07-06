@@ -16,7 +16,7 @@ termread: $(MDEP)
 truecolor: $(MDEP)
 	$(MAKE) -f mk.skel SOURCE=truecolor.c FINAL=$@ $@
 
-$(MDEP): Makefile
+$(MDEP): Makefile mk.skel
 	@touch $@
 	@-grep -E '^CC:?=' $@ 2>&1 >/dev/null; \
 	    if [ "0" != "$$?" ]; then \
@@ -41,9 +41,14 @@ $(MDEP): Makefile
 			echo "DESTDIR:=$(DESTDIR)" >> $@; else true; fi
 	@-grep -E '^SIGNID:?=' $@ 2>&1 >/dev/null; \
 		if [ "0" != "$$?" ]; then \
-			echo "SIGNID:=$(SIGNID)" >> $@; else true; fi
+			printf '# MacOS - Set a code signing signature name here.\n' >>$@; \
+			printf '# SIGNID=CompanyName Releases\n' >>$@; \
+			echo "SIGNID:=$(SIGNID)" >> $@; else true; \
+		fi
 	@-grep -E '^CHAIN:?=' $@ 2>&1 >/dev/null; \
 		if [ "0" != "$$?" ]; then \
+			printf '# MacOS/Sign - If signature is in a non-standard keychain:\n' >>$@; \
+			printf '# CHAIN=Offline.keychain-db\n' >>$@; \
 			echo "CHAIN:=$(CHAIN)" >> $@; else true; fi
 
 install: $(ITARGETS)
