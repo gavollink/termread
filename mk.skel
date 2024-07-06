@@ -141,6 +141,7 @@ else
 endif
 
 no-keychain:
+	-@if [ -e ./.keychain-unlock ]; then rm ./.keychain-unlock; fi
 	@echo "####################################################################"
 	@echo "#### macOS, SIGNID not set, will not attempt to codesign $(FINAL)"
 	@echo "####################################################################"
