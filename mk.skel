@@ -25,9 +25,11 @@ MAJ_VER=$(shell uname -r | awk -F. '{print $$1}')
 BUILD_DIR=$(ARCH).OBJ
 OBJS := $(foreach TT,$(SOURCE),$(patsubst %.c,$(BUILD_DIR)/%.o,$(TT) ) )
 
-ifdef SIGNID
 ifeq ($(SYS), Darwin)
+ifdef SIGNID
 X_DEPS+=keychain-unlock
+else
+X_DEPS+=no-keychain
 endif
 endif
 
@@ -138,8 +140,13 @@ else
 	$(CC) $(CCFLAGS) -c $< -o $@
 endif
 
+no-keychain:
+	@echo "####################################################################"
+	@echo "#### macOS, SIGNID not set, will not attempt to codesign $(FINAL)"
+	@echo "####################################################################"
+
 keychain-unlock: macos-keychain-unlock
-	@echo "running macos-keychain-unlock"
+	@echo "running script macos-keychain-unlock (SIGNID is set)"
 	@./macos-keychain-unlock
 
 macos-keychain-unlock: mk.skel
@@ -206,7 +213,7 @@ clean:
 dist-clean distclean: clean
 	-@if [ -e ./macos-keychain-unlock ]; then rm ./macos-keychain-unlock; fi
 
-.PHONY: clean dist-clean distclean install keychain-unlock
+.PHONY: clean dist-clean distclean install keychain-unlock no-keychain
 
 # FROM WIKIPEDIA...
 #
