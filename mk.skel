@@ -10,7 +10,11 @@
 #############################################################################
 include configure.mk
 
-X_DEPS=$(XDEP) Makefile mk.skel
+exec_prefix:=$(prefix)
+_INSTALLDIR=$(DESTDIR)/$(exec_prefix)/$(bindir)
+INSTALLDIR=$(shell echo $(_INSTALLDIR) | sed -e 's#//*#/#g')
+
+X_DEPS=$(XDEP) Makefile configure.mk mk.skel
 
 # Linux or Darwin (probably)
 SYS=$(shell uname -s)
@@ -145,7 +149,7 @@ macos-keychain-unlock: mk.skel
 	@printf 'if [ -e './.keychain-unlock' ]\n' >> macos-keychain-unlock
 	@printf 'then\n' >> macos-keychain-unlock
 	@printf '    TS=`stat -f"%%m" ./.keychain-unlock`\n' >> macos-keychain-unlock
-	@printf '    if [ "$$TS" -gt "$$CK" ]\n' >> macos-keychain-unlock
+	@printf '    if [ "$$TS" -lt "$$CK" ]\n' >> macos-keychain-unlock
 	@printf '    then\n' >> macos-keychain-unlock
 	@printf '       _NEED_UNLOCK=0\n' >> macos-keychain-unlock
 	@printf '    fi\n' >> macos-keychain-unlock
@@ -164,7 +168,15 @@ endif
 	chmod a+x macos-keychain-unlock
 
 install: $(ITARGETS)
-	@if [ "sbin/" = "$(INSTALLDIR)" ]; then \
+	@if [ "$(bindir)" = "$(INSTALLDIR)" ]; then \
+		echo "Cannot install, prefix= and DESTDIR=, both empty." ; \
+		echo "TRY: $$ make INSTALLDIR=<path> install" ; \
+		false; \
+	elif [ "sbin/" = "$(INSTALLDIR)" ]; then \
+		echo "Cannot install, prefix= and DESTDIR=, both empty." ; \
+		echo "TRY: $$ make INSTALLDIR=<path> install" ; \
+		false; \
+	elif [ "bin/" = "$(INSTALLDIR)" ]; then \
 		echo "Cannot install, prefix= and DESTDIR=, both empty." ; \
 		echo "TRY: $$ make INSTALLDIR=<path> install" ; \
 		false; \

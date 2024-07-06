@@ -3,5 +3,5 @@ termread
 truecolor
 *.truecolor
 *.termread
-*.OBJS
+*.OBJ
 .*.sw[op]
