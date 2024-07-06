@@ -12,7 +12,7 @@ include configure.mk
 
 exec_prefix:=$(prefix)
 _INSTALLDIR=$(DESTDIR)/$(exec_prefix)/$(bindir)
-INSTALLDIR=$(shell echo $(_INSTALLDIR) | sed -e 's#//*#/#g')
+INSTALLDIR=$(shell echo "$(_INSTALLDIR)" | sed -e 's@//*@/@g')
 
 X_DEPS=$(XDEP) Makefile configure.mk mk.skel
 
@@ -145,11 +145,11 @@ keychain-unlock: macos-keychain-unlock
 macos-keychain-unlock: mk.skel
 	@printf '#!/bin/bash\n' > macos-keychain-unlock
 	@printf '\n_NEED_UNLOCK=1\n' >> macos-keychain-unlock
-	@printf 'CK=`date -v-4m +"%%s"`\n' >> macos-keychain-unlock
+	@printf 'CK=`date -v-3m +"%%s"`\n' >> macos-keychain-unlock
 	@printf 'if [ -e './.keychain-unlock' ]\n' >> macos-keychain-unlock
 	@printf 'then\n' >> macos-keychain-unlock
 	@printf '    TS=`stat -f"%%m" ./.keychain-unlock`\n' >> macos-keychain-unlock
-	@printf '    if [ "$$TS" -lt "$$CK" ]\n' >> macos-keychain-unlock
+	@printf '    if [ "$$TS" -gt "$$CK" ]\n' >> macos-keychain-unlock
 	@printf '    then\n' >> macos-keychain-unlock
 	@printf '       _NEED_UNLOCK=0\n' >> macos-keychain-unlock
 	@printf '    fi\n' >> macos-keychain-unlock
@@ -168,15 +168,15 @@ endif
 	chmod a+x macos-keychain-unlock
 
 install: $(ITARGETS)
-	@if [ "$(bindir)" = "$(INSTALLDIR)" ]; then \
+	@if [ "/$(bindir)" = "$(INSTALLDIR)" ]; then \
 		echo "Cannot install, prefix= and DESTDIR=, both empty." ; \
 		echo "TRY: $$ make INSTALLDIR=<path> install" ; \
 		false; \
-	elif [ "sbin/" = "$(INSTALLDIR)" ]; then \
+	elif [ "/sbin/" = "$(INSTALLDIR)" ]; then \
 		echo "Cannot install, prefix= and DESTDIR=, both empty." ; \
 		echo "TRY: $$ make INSTALLDIR=<path> install" ; \
 		false; \
-	elif [ "bin/" = "$(INSTALLDIR)" ]; then \
+	elif [ "/bin/" = "$(INSTALLDIR)" ]; then \
 		echo "Cannot install, prefix= and DESTDIR=, both empty." ; \
 		echo "TRY: $$ make INSTALLDIR=<path> install" ; \
 		false; \
