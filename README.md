@@ -10,6 +10,11 @@ terminal is actually attached.
 *I have spent more time writing documentation about VT terminals than I
 have spent writing the code for this.*
 
+## Code Home
+
+    Primary Development: https://gitlab.home.vollink.com/external/termread
+    Backup Location:     https://github.com/gavollink/termread
+
 ## Command Line (as of release 1.12)
 
 ### Actions
