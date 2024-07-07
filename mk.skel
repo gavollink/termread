@@ -10,13 +10,13 @@
 #############################################################################
 include configure.mk
 
-exec_prefix:=$(prefix)
-_INSTALLDIR=$(DESTDIR)/$(exec_prefix)/$(bindir)
+CCFLAGS+=-std=gnu99
+_INSTALLDIR=$(DESTDIR)/$(exec_prefix)/$(bindir)/
 INSTALLDIR=$(shell echo "$(_INSTALLDIR)" | sed -e 's@//*@/@g')
 
 X_DEPS=$(XDEP) Makefile configure.mk mk.skel
 
-# Linux or Darwin (probably)
+# Linux or Darwin (probably), Darwin is the one I treat differently
 SYS=$(shell uname -s)
 # x86_64 or arm64
 ARCH=$(shell uname -m)
@@ -176,17 +176,10 @@ endif
 	chmod a+x macos-keychain-unlock
 
 install: $(ITARGETS)
-	@if [ "/$(bindir)" = "$(INSTALLDIR)" ]; then \
+	@if [ "/$(bindir)/" = "$(INSTALLDIR)" ]; then \
 		echo "Cannot install, prefix= and DESTDIR=, both empty." ; \
-		echo "TRY: $$ make INSTALLDIR=<path> install" ; \
-		false; \
-	elif [ "/sbin/" = "$(INSTALLDIR)" ]; then \
-		echo "Cannot install, prefix= and DESTDIR=, both empty." ; \
-		echo "TRY: $$ make INSTALLDIR=<path> install" ; \
-		false; \
-	elif [ "/bin/" = "$(INSTALLDIR)" ]; then \
-		echo "Cannot install, prefix= and DESTDIR=, both empty." ; \
-		echo "TRY: $$ make INSTALLDIR=<path> install" ; \
+		echo "INSTALLDIR=$(INSTALLDIR)"; \
+		echo "TRY: $$ make INSTALLDIR=<path> install"; \
 		false; \
 	fi
 	@if [ -d "$(INSTALLDIR)" ]; then \
