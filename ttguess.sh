@@ -880,6 +880,19 @@ _q_getterm ()
                 xterm
             _TERMSET=1
             ;;
+        '\033[?61;6;7;14;21;22;23;24;28;32;42c')
+            # Microsoft Terminal on Windows 11 v 1.21.2911.0
+            _debug_p "Microsoft Terminal (since 1.21.2911.0)"
+            _TM_COLORS=256;     export _TM_COLORS
+            _TM_EMOJI=1;        export _TM_EMOJI
+            # Verified on Windows 11
+            _TM_TRUECLR=1;      export _TM_TRUCLR
+            _TM_TRUEMODE=colon; export _TM_TRUEMODE
+            _set_cterm_fallback ms-terminal ms-vt-utf8 \
+                ms-vt100+ ms-vt100-color xterm-256color \
+                xterm
+            _TERMSET=1
+            ;;
     esac
 
     if [ "1" = "$_TERMSET" ]
