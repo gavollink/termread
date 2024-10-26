@@ -511,9 +511,9 @@ _q_getterm ()
                 ## Secondary DA (it didn't exist yet), but
                 ## every other terminal emulator gives us SOME
                 ## other response.
-                _debug_p "vt102 & no response on Secondary DA, probably 'st'"
-                _TM_COLORS=8;   export _TM_COLORS
-                _set_term_fallback_x st vt102
+                _debug_p "vt102 & no response on Secondary DA, maybe console"
+                _set_term_fallback_x linux vt102 # st
+                _TM_COLORS=8; export _TM_COLORS
                 _TERMSET=1
             elif [ '\033[>0;1901;1c' == "${TERM2DA}" ]
             then
@@ -627,11 +627,11 @@ _q_getterm ()
             fi
             ;;
         '\033[?65;1;9c')
-    # \e[?65;1;9c : VT500 - VTE specific
+    # \e[?65;1;9c : VT500 - VTE on Debian/Ubuntu libvte-2.91
             # Would try to separate this more but
             # xfce4-terminal and gnome-terminal both
             # respond identically, and I've never found
-            # a non=VTE terminal with this primary DA.
+            # a non-VTE terminal with this primary DA.
             _debug_p "vt500 - VTE response (Gnome, Xfce4)"
             # Should respond to TERM_BG and COLOR
             _TM_EMOJI=1;        export _TM_EMOJI
@@ -671,6 +671,10 @@ _q_getterm ()
             #       PRIMARY DA  : \e[?64;1;2;4;6;17;18;21;22c
             #       SECONDARY DA: \e[>41;2500;0c
             #       TERTIARY DA : \eP!I69547260\e\
+            # from macOS M1 iTerm2 version 3.5??
+            #       PRIMARY DA  : \e[?64;1;2;4;6;17;18;21;22c
+            #       SECONDARY DA: \e[>0;95;0c
+            #       TERTIARY DA : <null>
             _debug_p "iTerm2 from v 3.5"
             _TM_COLORS=256;     export _TM_COLORS
             _TM_ITERM2=1;       export _TM_ITERM2
@@ -758,7 +762,7 @@ _q_getterm ()
             ;;
         '\033[?62'*';4'*'c')
     # \e[?62;*4*c : VT240 Clone...
-            echo "VT240 Clone (feature 4)"
+            _debug_p "VT240 Clone (feature 4)"
             case "$TERM2DA" in
                 '\033[>0;115;0c')
                     # Very old entry, not recently validated
@@ -826,7 +830,7 @@ _q_getterm ()
                     _debug_p "iTerm2 (vt220 mode) 3.4.23 or older"
                     _TM_COLORS=256; export _TM_COLORS
                     _TM_EMOJI=1;    export _TM_EMOJI
-                    _set_cterm_fallback iterm2 iTerm2.app iterm2 xterm-vt220 vt220 vt200 xterm
+                    _set_cterm_fallback iterm2 iTerm2.app xterm-vt220 xterm
                     _TERMSET=1
                     ;;
                 '\033[>1;4000;'*c)
@@ -851,6 +855,22 @@ _q_getterm ()
                     _TERMSET=1
                     ;;
             esac
+            ;;
+        '\033[?61;1;21;22c')
+            # \e[?61;1;21;22c : VTE on Manjaro libvte-2.91
+            # Would try to separate this more but
+            # xfce4-terminal and gnome-terminal both
+            # respond identically, and I've never found
+            # a non-VTE terminal with this primary DA.
+            _debug_p "Non-DEC-DEC - VTE response (Gnome, Xfce4)"
+            # Should respond to TERM_BG and COLOR
+            _TM_EMOJI=1;        export _TM_EMOJI
+            _TM_COLORS=256;     export _TM_COLORS
+            _TM_TRUECLR=1;      export _TM_TRUCLR
+            _TM_TRUEMODE=colon; export _TM_TRUEMODE
+            _set_term_fallback_x vte-256color gnome-256color vte gnome \
+                xterm-256color
+            _TERMSET=1
             ;;
         '\033[?61;6;7;22;23;24;28;32;42c')
             _debug_p "Microsoft Terminal (since 1.18.1421.0)"
