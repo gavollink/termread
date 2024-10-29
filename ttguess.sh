@@ -515,6 +515,12 @@ _q_getterm ()
                 _set_term_fallback_x linux vt102 # st
                 _TM_COLORS=8; export _TM_COLORS
                 _TERMSET=1
+            elif [ '\033[?6c' == "${TERM2DA}" ]
+            then
+                _debug_p "JetBrains JediTerm (VT420 pretending to VT102)"
+                _TM_COLORS=256;     export _TM_COLORS
+                _set_term_fallback_x jedi xterm-256color
+                _TERMSET=1
             elif [ '\033[>0;1901;1c' == "${TERM2DA}" ]
             then
                 _debug_p "vt102 + alacritty response"
@@ -757,6 +763,13 @@ _q_getterm ()
     # \e[?62;1;2;6;9;15;16;22;28c : VT220 mode of xterm
             _debug_p "xterm in vt220 mode ([?62; without feature 4)"
             _TM_COLORS=256; export _TM_COLORS
+            _set_term_fallback_x xterm-vt220 vt220 vt200 xterm-256color
+            _TERMSET=1
+            ;;
+        '\033[?62;1;2;4;6;8;9;15c')
+            # Secondary ">1;123;0c"
+            _debug_p "jvt220 (no terminfo)."
+            _TTY_COLORS=256; export _TTY_COLORS
             _set_term_fallback_x xterm-vt220 vt220 vt200 xterm-256color
             _TERMSET=1
             ;;
