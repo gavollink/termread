@@ -144,7 +144,7 @@ _cleanpath_pre ()
 
     export $SCP_OUTPUT
 
-    echo "$TWANT"
+    "$_ECHO" "$TWANT"
     unset TWANT
     unset P
     unset CP
@@ -175,12 +175,13 @@ _cleanpath_post ()
         shift
     done
 
-    echo "$TWANT"
+    "$_ECHO" "$TWANT"
     unset TWANT
     unset P
     unset CP
     unset SCP_OUTPUT
 }
+
 my_inpath ()
 {
     if ! _e_setsyscmd sed _SED; then return 1; fi
@@ -512,8 +513,8 @@ _q_getterm ()
                 ## every other terminal emulator gives us SOME
                 ## other response.
                 _debug_p "vt102 & no response on Secondary DA, maybe console"
-                _set_term_fallback_x linux vt102 # st
                 _TM_COLORS=8; export _TM_COLORS
+                _set_term_fallback_x linux vt102 # st
                 _TERMSET=1
             elif [ '\033[?6c' == "${TERM2DA}" ]
             then
@@ -750,6 +751,27 @@ _q_getterm ()
                 _set_term_fallback_x vt320-basic vt320 vt300
                 _TERMSET=1
             fi
+            ;;
+        '\033[?62;22c')
+            _debug_p "VT240 Clone ([?62; with feature 22)"
+            case "$TERM2DA" in
+                '\033[>1;10;0c')
+                    # Ghostty (at least on macOS)
+                    _debug_p "Ghostty"
+                    _TM_COLORS=256; export _TM_COLORS
+                    _TM_TRUECLR=1;  export _TM_TRUCLR
+                    _set_term_fallback_x Ghostty ghostty xterm-ghostty \
+                        vt240 xterm-vt220 vt220 vt200 xterm-256color
+                    _TERMSET=1
+                    ;;
+                default)
+                    _debug_p "Secondary DA unrecognized"
+                    _TM_COLORS=0; export _TM_COLORS
+                    _set_term_fallback_x xterm-vt240 vt240 xterm-vt220 \
+                        vt220 vt200 xterm-256color
+                    _TERMSET=1
+                    ;;
+            esac
             ;;
         '\033[?62;1;2;4;6;9;15;16;22;28c')
     # \e[?62;1;2;4;6;9;15;16;22;28c : VT240 mode of xterm
