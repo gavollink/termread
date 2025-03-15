@@ -752,6 +752,27 @@ _q_getterm ()
                 _TERMSET=1
             fi
             ;;
+        '\033[?62;22c\033[>'*c)
+            _debug_p "Ghostty doubled PrimaryDA response"
+            case "$TERM2DA" in
+                '\033[>1;10;0c')
+                    # Ghostty (at least on macOS)
+                    _debug_p "Ghostty"
+                    _TM_COLORS=256; export _TM_COLORS
+                    _TM_TRUECLR=1;  export _TM_TRUCLR
+                    _set_term_fallback_x Ghostty ghostty xterm-ghostty \
+                        vt240 xterm-vt220 vt220 vt200 xterm-256color
+                    _TERMSET=1
+                    ;;
+                default)
+                    _debug_p "Secondary DA unrecognized"
+                    _TM_COLORS=0; export _TM_COLORS
+                    _set_term_fallback_x xterm-vt240 vt240 xterm-vt220 \
+                        vt220 vt200 xterm-256color
+                    _TERMSET=1
+                    ;;
+            esac
+            ;;
         '\033[?62;22c')
             _debug_p "VT240 Clone ([?62; with feature 22)"
             case "$TERM2DA" in
