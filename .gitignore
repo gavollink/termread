@@ -4,11 +4,18 @@ configure.mk
 .keychain-unlock
 # MacOS only, created by mk.skel (if SIGNID is set in configure.mk)
 macos-keychain-unlock
+# UTHash
+uthash
+uthashtest
 # Output Targets
+read_u9
 termread
 truecolor
 *.truecolor
 *.termread
+# terminfo raw files
+*-terminfo.src
+terminfo.src.latest
 # Build Directories
 *.OBJ/
 
