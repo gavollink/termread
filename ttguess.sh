@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
 #############################################################################
+export SAVETERM="${TERM}"
 
 _debug_p ()
 {
@@ -516,13 +517,13 @@ _q_getterm ()
                 _TM_COLORS=8; export _TM_COLORS
                 _set_term_fallback_x linux vt102 # st
                 _TERMSET=1
-            elif [ '\033[?6c' == "${TERM2DA}" ]
+            elif [ '\033[?6c' = "${TERM2DA}" ]
             then
                 _debug_p "JetBrains JediTerm (VT420 pretending to VT102)"
                 _TM_COLORS=256;     export _TM_COLORS
                 _set_term_fallback_x jedi xterm-256color
                 _TERMSET=1
-            elif [ '\033[>0;1901;1c' == "${TERM2DA}" ]
+            elif [ '\033[>0;2300;1c' = "${TERM2DA}" -a -z "${TERM3DA}" ]
             then
                 _debug_p "vt102 + alacritty response"
                 _TM_COLORS=256;     export _TM_COLORS
@@ -530,7 +531,15 @@ _q_getterm ()
                 _TM_TRUEMODE=colon; export _TM_TRUEMODE
                 _set_term_fallback_x alacritty rio
                 _TERMSET=1
-            elif [ '\033[>0;136;0c' == "${TERM2DA}" ]
+            elif [ '\033[>0;1901;1c' = "${TERM2DA}" -a -z "${TERM3DA}"  ]
+            then
+                _debug_p "vt102 + alacritty response"
+                _TM_COLORS=256;     export _TM_COLORS
+                _TM_TRUECLR=1;      export _TM_TRUCLR
+                _TM_TRUEMODE=colon; export _TM_TRUEMODE
+                _set_term_fallback_x alacritty rio
+                _TERMSET=1
+            elif [ '\033[>0;136;0c' = "${TERM2DA}" ]
             then
                 # PuTTY if ENQ is not set to PuTTY
                 _debug_p "vt102 + PuTTY response"
@@ -553,7 +562,7 @@ _q_getterm ()
         '\033[?1;0c')
             # VT 101
             _debug_p "vt101 Primary DA response."
-            if [ '\033[>0;10;1c' == "${TERM2DA}" ]
+            if [ '\033[>0;10;1c' = "${TERM2DA}" ]
             then
                 _debug_p "Windows Console / Microsoft Terminal (before 1.18.1421.0)"
                 _TM_EMOJI=1;    export _TM_EMOJI
@@ -604,7 +613,7 @@ _q_getterm ()
                     _set_term_fallback_x konsole-256color konsole xterm-256color
                 fi
                 _TERMSET=1
-            elif [ '\033[>1;95;0c' == "${TERM2DA}"  -a "0" = "$_TERMSET" ]
+            elif [ '\033[>1;95;0c' = "${TERM2DA}"  -a "0" = "$_TERMSET" ]
             then
     # \e[?1;2c : Claims to be a vt100
                 # NeXT or macOS Terminal.app
@@ -613,7 +622,7 @@ _q_getterm ()
                 _TM_COLORS=256;     export _TM_COLORS
                 _set_cterm_fallback nsterm xterm-256color xterm
                 _TERMSET=1
-            elif [ '\033[>0;95;0c' == "${TERM2DA}"  -a "0" = "$_TERMSET" ]
+            elif [ '\033[>0;95;0c' = "${TERM2DA}"  -a "0" = "$_TERMSET" ]
             then
     # \e[?1;2c : Claims to be a vt100
                 # iTerm2
@@ -629,6 +638,27 @@ _q_getterm ()
                 _TM_EMOJI=0;    export _TM_EMOJI
                 _TM_COLORS=0;   export _TM_COLORS
                 _debug_p "VT100 Primary DA response."
+                _set_term_fallback_x vt100-basic
+                _TERMSET=1
+            fi
+            ;;
+        '\033[?1;2c\033[?1;2c')
+            # ENQ responded with Primary DA (doubled)
+            # vt100 could mean...
+            _debug_p "vt100 Primary DA response (doubled from ENQ)."
+            if [ '\033[>85;95;0c' = "${TERM2DA}" -a "0" = "$_TERMSET" ]
+            then
+                _TM_EMOJI=0;        export _TM_EMOJI
+                _TM_COLORS=256;     export _TM_COLORS
+                _TM_TRUECLR=1;      export _TM_TRUECLR
+                _TM_TRUEMODE=colon; export _TM_TRUEMODE
+                _debug_p "rxvt-unicode-256color"
+                _set_term_fallback_x rxvt-unicode-256color xterm-256color
+                _TERMSET=1
+            else
+                _TM_EMOJI=0;    export _TM_EMOJI
+                _TM_COLORS=0;   export _TM_COLORS
+                _debug_p "VT100 specifics not detected."
                 _set_term_fallback_x vt100-basic
                 _TERMSET=1
             fi
@@ -959,6 +989,21 @@ _q_getterm ()
         '\033[?61;6;7;14;21;22;23;24;28;32;42c')
             # Microsoft Terminal on Windows 11 v 1.21.2911.0
             _debug_p "Microsoft Terminal (since 1.21.2911.0)"
+            _TM_COLORS=256;     export _TM_COLORS
+            _TM_EMOJI=1;        export _TM_EMOJI
+            # Verified on Windows 11
+            _TM_TRUECLR=1;      export _TM_TRUCLR
+            _TM_TRUEMODE=colon; export _TM_TRUEMODE
+            _set_cterm_fallback ms-terminal ms-vt-utf8 \
+                ms-vt100+ ms-vt100-color xterm-256color \
+                xterm
+            _TERMSET=1
+            ;;
+        '\033[?61;4;6;7;14;21;22;23;24;28;32;42c')
+            # Microsoft Terminal on Windows 11 v 1.22.10731.0
+            #TERM2DA='\033[>0;10;1c'; export TERM2DA; 
+            #TERM3DA='\033P!|00000000\033\'; export TERM3DA; 
+            _debug_p "Microsoft Terminal (since 1.22.10731.0)"
             _TM_COLORS=256;     export _TM_COLORS
             _TM_EMOJI=1;        export _TM_EMOJI
             # Verified on Windows 11
