@@ -13,7 +13,7 @@
  * LICENSE: Embedded at bottom...
  *
  */
-#define VERSION "1.17"
+#define VERSION "1.18"
 #define C_YEARS "2021-2024"
 #define IDENT "termread"
 #define WEBHOME "https://gitlab.home.vollink.com/external/termread/"
@@ -795,6 +795,8 @@ int is_vtxxx ( const char * term )
         "vt101",
         "vt102",
         // Not in terminfo.src, but does support:
+        "ghostty",
+        "xterm-ghostty",
         "wezterm",
         "\000"
     };
@@ -851,7 +853,7 @@ _arg_find_short( char in )
 int
 _arg_valid( int index, char *val )
 {
-    char indic = Options[index].indic;
+    char  indic  = Options[index].indic;
     char *endptr = NULL;
 
     // NOTE: Apple clang doesn't allow variable create within a switch case
