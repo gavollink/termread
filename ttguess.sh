@@ -4,9 +4,9 @@ export SAVETERM="${TERM}"
 
 _debug_p ()
 {
-    _e_setecho -b
     if [ -n "$DEBUG" ]
     then
+        _e_setecho -b
         "$_ECHO" $* >&2
     fi
 }
@@ -733,13 +733,14 @@ _q_getterm ()
     # \e[?64;1;9;15;21;22c : VT420 mode of zutty
             _debug_p "zutty in vt420 mode"
             _TM_EMOJI=0;    export _TM_EMOJI
-            _TM_NOSTATUS=1; export _TM_EMOJI
+            _TM_NOSTATUS=1; export _TM_NOSTATUS
             _TM_COLORS=256; export _TM_COLORS
+            # Verified on Debian 12 zutty
             # Verified on Ubuntu 22.04 zutty
             _TM_TRUECLR=1; export _TM_TRUCLR
             # Colon prints junk (not just ignored)
             _TM_TRUEMODE=semi; export _TM_TRUEMODE
-            _set_term_fallback_x zutty vt420-basic vt420 xterm-256color
+            _set_term_fallback_x zutty xterm-256color
             _TERMSET=1
             ;;
         '\033[?64;'*c)
