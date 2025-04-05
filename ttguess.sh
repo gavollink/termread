@@ -690,7 +690,7 @@ _q_getterm ()
             _TM_TRUEMODE=colon; export _TM_TRUEMODE
             _TM_KITTY=0;        export _TM_KITTY
             _TM_ITERM2=0;       export _TM_ITERM2
-            _set_cterm_fallback contour-direct contour \
+            _set_cterm_fallback contour contour-direct \
                 vt525 vt525-basic vt520 vt520-basic \
                 vt420-basic vt420 vt320-basic vt320 xterm
             _TERMSET=1
