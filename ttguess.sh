@@ -593,25 +593,14 @@ _q_getterm ()
             then
     # \e[?1;2c : Claims to be a vt100
                 # Cool Retro Term or Konsole
-                eval `"${_TERMREAD}" '!' -b`
-                if [ -z "$TERM_BG" ]; then
-                    ## Even though this flattens colors to pretend it's
-                    ## a monochrome CRT, it still supports all the colors.
-                    _debug_p "Cool-Retro-TERM"
-                    _TM_EMOJI=1;      export _TM_EMOJI
-                    _TM_COLORS=256;   export _TM_COLORS
-                    _TM_EMOJISPACE=1; export _TM_EMOJISPACE
-                    _set_term_fallback_x konsole
-                else
-                    _debug_p "Konsole"
-                    _TM_EMOJI=1;       export _TM_EMOJI
-                    _TM_COLORS=256;    export _TM_COLORS
-                    _TM_TRUECLR=1;     export _TM_TRUCLR
-                    # Internet claims new versions can do colon, but..
-                    #  it doesn't work for me.
-                    _TM_TRUEMODE=semi; export _TM_TRUEMODE
-                    _set_term_fallback_x konsole-256color konsole xterm-256color
-                fi
+                _debug_p "Konsole"
+                _TM_EMOJI=1;       export _TM_EMOJI
+                _TM_COLORS=256;    export _TM_COLORS
+                _TM_TRUECLR=1;     export _TM_TRUCLR
+                # Internet claims new versions can do colon, but..
+                #  it doesn't work for me.
+                _TM_TRUEMODE=semi; export _TM_TRUEMODE
+                _set_term_fallback_x konsole-256color konsole xterm-256color
                 _TERMSET=1
             elif [ '\033[>1;95;0c' = "${TERM2DA}"  -a "0" = "$_TERMSET" ]
             then
@@ -689,6 +678,19 @@ _q_getterm ()
             _TM_KITTY=1;        export _TM_KITTY
             _TM_ITERM2=1;       export _TM_ITERM2
             _set_cterm_fallback wezterm-direct wezterm \
+                vt525 vt525-basic vt520 vt520-basic \
+                vt420-basic vt420 vt320-basic vt320 xterm
+            _TERMSET=1
+            ;;
+        '\033[?65;22;314;1;28;4;8c')
+            _debug_p "Contour"
+            _TM_EMOJI=1;        export _TM_EMOJI
+            _TM_COLORS=256;     export _TM_COLORS
+            _TM_TRUECLR=1;      export _TM_TRUCLR
+            _TM_TRUEMODE=colon; export _TM_TRUEMODE
+            _TM_KITTY=0;        export _TM_KITTY
+            _TM_ITERM2=0;       export _TM_ITERM2
+            _set_cterm_fallback contour-direct contour \
                 vt525 vt525-basic vt520 vt520-basic \
                 vt420-basic vt420 vt320-basic vt320 xterm
             _TERMSET=1
