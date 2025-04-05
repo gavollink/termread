@@ -8,10 +8,10 @@ MDEP=configure.mk mk.skel Makefile
 
 all: termread truecolor
 
-termread: $(MDEP)
+termread: $(MDEP) termread.c
 	$(MAKE) -f mk.skel SOURCE=termread.c FINAL=$@ $@
 
-truecolor: $(MDEP)
+truecolor: $(MDEP) truecolor.c
 	$(MAKE) -f mk.skel SOURCE=truecolor.c FINAL=$@ $@
 
 configure.mk: configure.dist

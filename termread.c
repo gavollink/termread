@@ -13,7 +13,7 @@
  * LICENSE: Embedded at bottom...
  *
  */
-#define VERSION "1.18"
+#define VERSION "1.19"
 #define C_YEARS "2021-2024"
 #define IDENT "termread"
 #define WEBHOME "https://gitlab.home.vollink.com/external/termread/"
@@ -127,7 +127,7 @@ struct options_s {
         .want = "nnn",
         .descr = "color",
         .indic = 'c',
-        .helptext = { "Ask terminal for background color.", NULL }
+        .helptext = { "Ask terminal for value of indexed color.", NULL }
     },
     {
         .is_action = 1,
@@ -797,6 +797,8 @@ int is_vtxxx ( const char * term )
         // Not in terminfo.src, but does support:
         "ghostty",
         "xterm-ghostty",
+        "contour",
+        "contour-direct",
         "wezterm",
         "\000"
     };
@@ -1292,11 +1294,11 @@ args( int argc, char *argv[] )
             DEBUGOUT("--var [%s] will only be used for --term3\n", opt.var );
         }
         else if ( opt.getcolor ) {
-            DEBUGOUT("--var [%s] will only be used for --color\n", opt.var );
+            DEBUGOUT("--var [%s] will only be used for --color %i\n", opt.var,
+                   opt.color_num );
         }
         else if ( opt.background ) {
-            DEBUGOUT("--var [%s] will only be used for --bg %i\n", opt.var,
-                    opt.color_num );
+            DEBUGOUT("--var [%s] will only be used for --bg\n", opt.var );
         }
         else if ( opt.print ) {
             DEBUGOUT("--var [%s] will only be used for --printf\n", opt.var );
@@ -1690,7 +1692,7 @@ term_write()
             fflush( fh );
         } else {
             fprintf( stderr,
-                "# Current effective TERM='%s', does not support --color\n",
+                "# Current effective TERM='%s', does not support --bg\n",
                 opt.envterm);
             if ( 0 == is_vtxx( opt.envterm ) ) {
                 fprintf( stderr, "# This term in a descendent of vt50, but color\n" );
