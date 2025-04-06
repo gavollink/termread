@@ -1,22 +1,22 @@
 # If the first ones are set command-line,
-# `:=` won't override the values.
-CC:=gcc
-CCFLAGS:=-Wall -O2
+# `?=` won't override environment values, if they exist.
+CC ?= gcc
+CCFLAGS ?= -Wall -O2
 # NOTE: -std=gnu99 will be added to CCFLAGS by mk.skel, don't force any -std
-prefix=
-exec_prefix=$(prefix)
-bindir=bin
+prefix ?=
+exec_prefix ?= $(prefix)
+bindir ?= bin
 # DO NOT SET DIRECTLY, BUT THIS IS THE PATTERN...
-## INSTALLDIR=$(DESTDIR)$(exec_prefix)/$(bindir)/
+## INSTALLDIR := $(DESTDIR)$(exec_prefix)/$(bindir)/
 # Normally, DESTDIR is reserved for chroot style overrides,
 # like for a binary distribution packaging step.
 
 # MacOS - Set a code signing signature name here.
-# SIGNID=CompanyName Releases
-SIGNID:=
+# SIGNID ?= CompanyName Releases
+SIGNID ?=
 # MacOS/Sign - If signature is in a non-standard keychain:
-# CHAIN=Offline.keychain-db
-CHAIN:=
+# CHAIN ?= Offline.keychain-db
+CHAIN ?=
 
 # vim: ft=make
 # EOF configure.dist / configure.mk
