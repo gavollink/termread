@@ -13,8 +13,8 @@
  * LICENSE: Embedded at bottom...
  *
  */
-#define VERSION "1.19"
-#define C_YEARS "2021-2024"
+#define VERSION "1.20"
+#define C_YEARS "2021-2025"
 #define IDENT "termread"
 #define WEBHOME "https://gitlab.home.vollink.com/external/termread/"
 #define AT "@"
@@ -22,6 +22,16 @@
 #define AUTHOR1 "Gary Allen Vollink"
 #define CONTACT1 "gary" AT "vollink" DOT "com"
 #define AUTHORS "   " AUTHOR1 " <" CONTACT1 ">\n"
+
+#define DEC_ID "\033Z"
+// The PRIMARY_DEV_ATTR sequence is based on Primary DA (name from
+// vt220 manual).  However, this sequence includes a cheat-code.
+// PuTTY responds to "\005" with "PuTTY", so by putting out both,
+// PuTTY responsds with both outputs like so: '\033[?6cPuTTY'
+// THIS IS NOT FOOLPROOF since, well, the setting is configurable
+// by the user per connection (Under Terminal settings).
+#define PRIMARY_DEV_ATTR "\033[c"
+#define ENQUIRY "\005"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,18 +49,19 @@ void printlicense( void );
 static struct termios orig_term, new_term;
 
 struct sopt {
-    int needhelp;   /* Help is needed */
-    int wanthelp;   /* Help is explicitly requested */
+    int needhelp;     /* Help is needed */
+    int wanthelp;     /* Help is explicitly requested */
     int wantversion;  /* Version is requested */
     int wantlicense;  /* License is requested */
-    int background; /* VT100 background query */
-    int getcolor;   /* VT100 color query */
-    int termname;   /* VT* terminal caps query */
+    int background;   /* VT100 background query */
+    int getcolor;     /* VT100 color query */
+    int reqenq;       /* Just 0x05 (ascii ENQ) */
+    int termname;     /* VT* terminal caps query */
     int term2da;
     int term3da;
     int print;
-    int justerase;  /* VT* terminal current line erase sequence */
-    int ignoreterm; /* Ignore $TERM */
+    int justerase;    /* VT* terminal current line erase sequence */
+    int ignoreterm;   /* Ignore $TERM */
     int wantstat;
     int color_num;
     int debug;
@@ -98,6 +109,13 @@ struct options_s {
         .ltr  = { 't', '1', 0 },
         .int_dest = &opt.termname,
         .helptext = { "Ask terminal for 'Primary DA'.", NULL }
+    },
+    {
+        .is_action = 1,
+        .full = { "enq", NULL },
+        .ltr  = { 'e', '0', 0 },
+        .int_dest = &opt.reqenq,
+        .helptext = { "Ask terminal for ENQ.", NULL }
     },
     {
         .is_action = 1,
@@ -265,6 +283,7 @@ struct options_s {
 };
 
 char background_var[] = "TERM_BG";
+char enq_var[] = "ENQ";
 char termname_var[] = "TERMID";
 char term2da_var[] = "TERM2DA";
 char term3da_var[] = "TERM3DA";
@@ -272,19 +291,11 @@ char getcolor_var[] = "COLOR";
 char print_var[] = "READ";
 char default_var[] = "OUT";
 
-const char vt_termreq[] = "\033Z";
 const char vt_eraseline[] = "\033\015\033K";
-// The xt_termreq sequence is based on Primary DA (name from
-// vt220 manual).  However, this sequence includes a cheat-code.
-// PuTTY responds to "\005" with "PuTTY", so by putting out both,
-// PuTTY responsds with both outputs like so: '\033[?6cPuTTY'
-// THIS IS NOT FOOLPROOF since, well, the setting is configurable
-// by the user per connection (Under Terminal settings).
-const char xt_termreq[] = "\033[c\005";
 // This sequence is copied from the vt220 manual
 //  where it is referred to as `Secondary DA`
 // and is only supported by vt220 descendencts.
-// Bascially, if a terminal doesn't respond to "xt_termreq"
+// Bascially, if a terminal doesn't respond to "PRIMARY_DEV_ATTR"
 // it won't respond to this.
 // Note that many modern vt100 descendence (including xterm)
 // respond to this anyway.
@@ -1284,7 +1295,10 @@ args( int argc, char *argv[] )
             && ( 1 < action_requested )
             )
     {
-        if ( opt.termname ) {
+        if ( opt.reqenq ) {
+            DEBUGOUT("--var [%s] will only be used for --enq\n", opt.var );
+        }
+        else if ( opt.termname ) {
             DEBUGOUT("--var [%s] will only be used for --term\n", opt.var );
         }
         else if ( opt.term2da ) {
@@ -1599,7 +1613,17 @@ term_write()
     }
 
     int ret = 0;
-    if ( 1 == opt.termname ) {
+    if ( 1 == opt.reqenq ) {
+        opt.reqenq = 0;
+        if ( NULL == opt.var ) {
+            opt.var = enq_var;
+            DEBUGOUT("Set default --enq var to %s\n", opt.var );
+        }
+        // Unlike many of these, ENQUIRY doesn't need any ECMA check
+        ret = fprintf(fh, ENQUIRY);
+        fflush( fh );
+    }
+    else if ( 1 == opt.termname ) {
         opt.termname = 0;
         if ( NULL == opt.var ) {
             opt.var = termname_var;
@@ -1608,10 +1632,10 @@ term_write()
 
         if ( 0 == is_vtxx( opt.envterm ) ) {
             // THIS IS VERY RARE, WILL PROBABLY NEVER BE USED...
-            ret = fprintf(fh, vt_termreq );
+            ret = fprintf(fh, DEC_ID );
         }
         else if ( 0 == is_vtxxx( opt.envterm ) ) {
-            ret = fprintf(fh, xt_termreq );
+            ret = fprintf(fh, PRIMARY_DEV_ATTR );
         } else {
             fprintf( stderr,
                 "# Current effective TERM='%s', does not support --term\n",
