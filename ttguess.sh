@@ -2,11 +2,11 @@
 #############################################################################
 export SAVETERM="${TERM}"
 
-_debug_p ()
+__debug_p ()
 {
     if [ -n "$DEBUG" ]
     then
-        _e_setecho -b
+        __e_setecho -b
         "$_ECHO" $* >&2
     fi
 }
@@ -15,7 +15,7 @@ _debug_p ()
 # -b     Optional, attempt built-in echo OK if system echo cannot be found.
 # Sets GLOBALS:
 #  _ECHO
-_e_setecho ()
+__e_setecho ()
 {
     MUSTSYS=1
     if [ -n "$1" -a "$1" = "-b" ]
@@ -51,11 +51,11 @@ _e_setecho ()
 # $ARG2  ENV VAR to put path to system command.
 ##
 # Sets GLOBALS:
-#     _ECHO      (calls _e_setecho)
+#     _ECHO      (calls __e_setecho)
 #     $ARG2
-_e_setsyscmd ()
+__e_setsyscmd ()
 {
-    if ! _e_setecho -b; then return 1; fi
+    if ! __e_setecho -b; then return 1; fi
     MUSTSYS=1
     if [ ! -z "$1" -a "$1" = "-b" ]
     then
@@ -117,55 +117,15 @@ _e_setsyscmd ()
     return 0
 }
 
-_known_terminal()
+__set_term_info_cx()
 {
-    local KNOW=$1
-              # EMOJI_SUPPORT:COLOR_INDEX_MAX:TRUECOLOR[:TRUECOLOR_MODE]
-    local INFO=""
-    case "$KNOW" in
-        putty)
-            # TRUECLR verified on Windows PuTTY 0.76 (colon ignored)
-            INFO="1:256:1:semi"
-            _TM_PUTTY=1;       export _TM_PUTTY
-            _set_term_fallback_x "putty-256color" "putty" "xterm-256color"
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
-            ;;
-        rxvt-unicode-256color)
-            INFO="0:256:1:colon"
-            _set_term_fallback_x rxvt-unicode-256color xterm-256color
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
-            ;;
-        vt102)
-            INFO="0:8:0"
-            if [ "st" != "$TERM" ]; then
-                _set_term_fallback_x linux vt102 # maybe st
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
-                fi
-            else
-                _TERMSET=1
-            fi
-            ;;
-        JediTerm)
-            INFO="0:256:0"
-            _set_term_fallback_x jedi xterm-256color
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
-            ;;
-        vte)
-            INFO="1:256:1:colon"
-            _set_term_fallback_x vte-256color gnome-256color vte gnome \
-                xterm-256color
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
-            ;;
-    esac
+    local INFO=$1; shift
+    local TRYLIST=$@
+
+    __set_cterm_fallback $TRYLIST
+    if [ "0" = "$?" ]; then
+        _TERMSET=1
+    fi
     if [ -n "$INFO" ]
     then
         _TM_EMOJI=$(echo $INFO | awk -F: '{print $1}'); export _TM_EMOJI
@@ -175,19 +135,203 @@ _known_terminal()
         then
             _TM_TRUEMODE=$(echo $INFO | awk -F: '{print $4}')
             export _TM_TRUEMODE
+            COLORTERM=truecolor; export COLORTERM
         fi
     fi
-    if [ "1" == "$_TM_TRUECOLOR" ]
-    then
-        COLORTERM=truecolor; export COLORTERM
+}
+
+__set_term_info_x()
+{
+    local INFO=$1; shift
+    local TRYLIST=$@
+
+    __set_term_fallback_x $TRYLIST
+    if [ "0" = "$?" ]; then
+        _TERMSET=1
     fi
+    if [ -n "$INFO" ]
+    then
+        _TM_EMOJI=$(echo $INFO | awk -F: '{print $1}'); export _TM_EMOJI
+        _TM_COLORS=$(echo $INFO | awk -F: '{print $2}'); export _TM_COLORS
+        _TM_TRUECLR=$(echo $INFO | awk -F: '{print $3}'); export _TM_TRUECLR
+        if [ "1" = "$_TM_TRUECLR" ]
+        then
+            _TM_TRUEMODE=$(echo $INFO | awk -F: '{print $4}')
+            export _TM_TRUEMODE
+            COLORTERM=truecolor; export COLORTERM
+        fi
+    fi
+}
+
+_known_terminal()
+{
+    local KNOW=$1
+              # EMOJI_SUPPORT:COLOR_INDEX_MAX:TRUECOLOR[:TRUECOLOR_MODE]
+    local INFO=""
+    _TM_KITTY=0;  export _TM_KITTY
+    _TM_ITERM2=0; export _TM_ITERM2
+    case "$KNOW" in
+        putty)
+            # TRUECLR verified on Windows PuTTY 0.76 (colon ignored)
+            __set_term_info_x \
+                "1:256:1:semi" \
+                "putty-256color" "putty" "xterm-256color"
+            _TM_PUTTY=1;       export _TM_PUTTY
+            ;;
+        rxvt-unicode-256color)
+            __set_term_info_x \
+                "0:256:1:colon" rxvt-unicode-256color xterm-256color
+            ;;
+        vt102)
+            ####
+            ## THIS IS A BAD CALL, HONESTLY
+            ## Nothing in the vt100 range originally responded to
+            ## Secondary DA (it didn't exist yet), but
+            ## every other terminal emulator gives us SOME
+            ## other response.
+            ####
+            if [ "st" != "$TERM" ]; then
+                __set_term_info_x "0:8:0" linux vt102
+                if [ "0" = "$?" ]; then
+                    _TERMSET=1
+                fi
+            else
+                _TM_EMOJI=0; export _TM_EMOJI
+                _TM_COLORS=8; export _TM_COLORS
+                _TM_TRUECLR=0; export _TM_TRUECLR
+                _TERMSET=1
+            fi
+            ;;
+        JediTerm)
+            __set_term_info_x "0:256:0" jedi xterm-256color
+            ;;
+        vte)
+            __set_term_info_x "1:256:1:colon" \
+                vte-256color gnome-256color vte gnome xterm-256color
+            ;;
+        alacritty)
+            __set_term_info_x "1:256:1:colon" \
+                alacritty rio xterm-256color
+            ;;
+        msterm18)
+            __set_term_info_x "1:256:0" \
+                ms-terminal ms-vt-utf8 ms-vt100+ \
+                ms-vt100-color xterm-256color
+            ;;
+        vt101)
+            __set_term_info_x "0:2:0" vt101
+            ;;
+        vt100)
+            __set_term_info_x "0:2:0" vt100-basic vt100
+            ;;
+        byobu)
+            _set_term_info_c "1:256:0" xterm
+            ;;
+        konsole)
+            __set_term_info_x "1:256:1:semi" \
+                konsole-256color konsole xterm-256color
+            ;;
+        konsole-old)
+            __set_term_info_x "0:256:0" \
+                konsole-256color konsole xterm-256color
+            ;;
+        terminal.app)
+            __set_term_info_x "1:256:0" nsterm xterm-256color
+            ;;
+        iterm2)
+            _TM_ITERM2=1; export _TM_ITERM2
+            __set_term_info_x "1:256:1:colon" iterm2 iTerm2.app xterm-256color
+            ;;
+        vte)
+            __set_term_info_x "1:256:1:colon" vte-256color \
+                gnome-256color vte gnome xterm-256color
+            ;;
+        wezterm)
+            _TM_KITTY=1;  export _TM_KITTY
+            _TM_ITERM2=1; export _TM_ITERM2
+            __set_term_info_x "1:256:1:colon" wezterm wezterm-direct \
+                xterm-256color vt525 vt525-basic
+            ;;
+        contour)
+            __set_term_info_x "1:256:1:colon" contour contour-direct \
+                xterm-256color vt525 vt525-basic
+            ;;
+        vt500c)
+            __set_term_info_x "0:256:0" xterm-256color vt525 vt525-basic
+            ;;
+        vt500)
+            __set_term_info_x "0:2:0" vt520 vt520-basic vt510
+            ;;
+        xterm420)
+            __set_term_info_x "0:256:1:semi" xterm-256color
+            ;;
+        zutty)
+            # Verified on Debian 12 zutty
+            # Verified on Ubuntu 22.04 zutty
+            # Colon prints junk (not just ignored)
+            _TM_NOSTATUS=1; export _TM_NOSTATUS
+            __set_term_info_x "0:256:1:semi" zutty xterm-256color
+            ;;
+        vt420)
+            # There was NOT a color VT420 and capability code 22 didn't
+            # exist until the 500 series, HOWEVER, I've yet to run
+            # into a modern virtual terminal that pretends to support
+            # vt200+ that doesn't support 256 colors.
+            ###
+            # This is in contrast to what I do with vt500, which is to
+            # honor the capability code.  I do this because it was valid
+            # for vt500 series, but not before.
+            __set_term_info_x "0:256:0" vt420 vt420-basic xterm-256color
+            ;;
+        xterm340)
+            __set_term_info_x "0:256:1:semi" xterm-vt340 xterm-256color
+            ;;
+        xterm320)
+            __set_term_info_x "0:256:1:semi" xterm-vt320 xterm-256color
+            ;;
+        connectbot)
+            # Surprisingly, no Emoji support
+            _set_term_info_c "0:256:1:colon" xterm
+            ;;
+        vt320)
+            # There was NOT a color VT340 and capability code 22 didn't
+            # exist until the 500 series, HOWEVER, I've yet to run
+            # into a modern virtual terminal that pretends to support
+            # vt200+ that doesn't support 256 colors.
+            _set_term_info_c "0:256:0" xterm
+            ;;
+        ghostty)
+            __set_term_info_x "1:256:1:colon" ghostty xterm-ghostty \
+                xterm-256color
+            ;;
+        vt240)
+            # One of the few color supporting DEC terminals.
+            _set_term_info_c "0:256:0" xterm-vt240 vt240 xterm
+            ;;
+        xterm240)
+            __set_term_info_x "0:256:0" xterm-vt240 xterm-256color
+            ;;
+        xterm220)
+            __set_term_info_x "0:2:0" xterm-vt220 vt220
+            ;;
+        kitty)
+            # Verified on Ubuntu 22.04 kitty
+            _TM_KITTY=1; export _TM_KITTY
+            __set_term_info_x "1:256:1:colon" xterm-kitty kitty kitty-direct \
+                xterm-256color
+            ;;
+        msterminal)
+            __set_term_info_x "1:256:1:semi" \
+                ms-terminal ms-vt100-color xterm-256color
+            ;;
+    esac
 }
 
 ########################################
 # Sets No Global
-_cleanpath_pre ()
+__cleanpath_pre ()
 {
-    if ! _e_setecho -b; then return 1; fi
+    if ! __e_setecho -b; then return 1; fi
     SCP_OUTPUT="$1"
     shift
 
@@ -220,9 +364,9 @@ _cleanpath_pre ()
 
 ########################################
 # Sets No Global
-_cleanpath_post ()
+__cleanpath_post ()
 {
-    if ! _e_setecho -b; then return 1; fi
+    if ! __e_setecho -b; then return 1; fi
     SCP_OUTPUT="$1"
     shift
 
@@ -249,9 +393,9 @@ _cleanpath_post ()
     unset SCP_OUTPUT
 }
 
-my_inpath ()
+__my_inpath ()
 {
-    if ! _e_setsyscmd sed _SED; then return 1; fi
+    if ! __e_setsyscmd sed _SED; then return 1; fi
 
     FCX=0
     FVAR="PATH"
@@ -286,38 +430,38 @@ my_inpath ()
     fi
 }
 
-my_inpath_quiet ()
+__my_inpath_quiet ()
 {
-    my_inpath "$@" >/dev/null
+    __my_inpath "$@" >/dev/null
 }
 
-my_inpath_first ()
+__my_inpath_first ()
 {
-    my_inpath "$@" | head -1
+    __my_inpath "$@" | head -1
 }
 
-_q_terminfo_dirs ()
+__q_terminfo_dirs ()
 {
     if [ -z "${_TM_TERMINFO_DIRS}" ]
     then
         export TERMINFO_DIRS
-        TERMINFO_DIRS=`_cleanpath_post TERMINFO_DIRS "/etc/terminfo"`
-        TERMINFO_DIRS=`_cleanpath_post TERMINFO_DIRS "/usr/share/terminfo"`
-        TERMINFO_DIRS=`_cleanpath_pre TERMINFO_DIRS "/lib/terminfo"`
-        TERMINFO_DIRS=`_cleanpath_pre TERMINFO_DIRS "/usr/local/share/terminfo"`
-        TERMINFO_DIRS=`_cleanpath_pre TERMINFO_DIRS "${HOME}/.terminfo"`
+        TERMINFO_DIRS=`__cleanpath_post TERMINFO_DIRS "/etc/terminfo"`
+        TERMINFO_DIRS=`__cleanpath_post TERMINFO_DIRS "/usr/share/terminfo"`
+        TERMINFO_DIRS=`__cleanpath_pre TERMINFO_DIRS "/lib/terminfo"`
+        TERMINFO_DIRS=`__cleanpath_pre TERMINFO_DIRS "/usr/local/share/terminfo"`
+        TERMINFO_DIRS=`__cleanpath_pre TERMINFO_DIRS "${HOME}/.terminfo"`
         export TERMINFO_DIRS
         _TM_TERMINFO_DIRS=1
         export _TM_TERMINFO_DIRS
     fi
 }
 
-_find_terminfo ()
+__find_terminfo ()
 {
-    _q_terminfo_dirs
+    __q_terminfo_dirs
     ENTRY="$1"
     ST=`${_ECHO} ${ENTRY} | cut -c1`
-    my_inpath_quiet TERMINFO_DIRS "${ST}/${ENTRY}"
+    __my_inpath_quiet TERMINFO_DIRS "${ST}/${ENTRY}"
     if [ "0" = "$?" ]
     then
         unset ENTRY
@@ -326,7 +470,7 @@ _find_terminfo ()
         return 0
     fi
     SX=`${_ECHO} -n ${ST} | hexdump -n 1 -e '/1 "%02x"'`
-    my_inpath_quiet TERMINFO_DIRS "${SX}/${ENTRY}"
+    __my_inpath_quiet TERMINFO_DIRS "${SX}/${ENTRY}"
     if [ "0" = "$?" ]
     then
         unset ENTRY
@@ -343,7 +487,7 @@ _find_terminfo ()
     return 1
 }
 
-_set_cterm_fallback ()
+__set_cterm_fallback ()
 {
     unset TCOLOR
 
@@ -369,13 +513,13 @@ _set_cterm_fallback ()
         for C in $TCOLOR
         do
             CFALL="${FALL}${C}"
-            _find_terminfo "$CFALL"
+            __find_terminfo "$CFALL"
             if [ "0" = "$?" ]; then
                 TERM="$CFALL"; export TERM
                 true; return
             fi
         done
-        _find_terminfo "$FALL"
+        __find_terminfo "$FALL"
         if [ "0" = "$?" ]; then
             TERM="$FALL"; export TERM
             true; return
@@ -388,14 +532,14 @@ _set_cterm_fallback ()
     false; return
 }
 
-_set_term_fallback ()
+__set_term_fallback ()
 {
     FALL="$1"
     while [ ! -z "$FALL" ]
     do
         shift
 
-        _find_terminfo "$FALL"
+        __find_terminfo "$FALL"
         if [ "0" = "$?" ]; then
             TERM="$FALL"; export TERM
             true; return
@@ -407,25 +551,25 @@ _set_term_fallback ()
     false; return
 }
 
-_set_term_fallback_x ()
+__set_term_fallback_x ()
 {
-    _set_term_fallback $@
+    __set_term_fallback $@
     if [ "0" != "$?" ]; then
         TERM="xterm"; export TERM
     fi
     true; return
 }
 
-_do_usage ()
+__do_usage ()
 {
-    _e_setecho -b
+    __e_setecho -b
     "$_ECHO" " "
     "$_ECHO" $0" [-q] [-h]"
 }
 
-_do_help ()
+__do_help ()
 {
-    _e_setecho -b
+    __e_setecho -b
     "$_ECHO" $0
     "$_ECHO" " "
     "$_ECHO" "Tries to figure out which terminal emulator is being used."
@@ -440,9 +584,9 @@ _do_help ()
     "$_ECHO" " "
 }
 
-_q_getterm ()
+__q_getterm ()
 {
-    _e_setsyscmd grep GREP
+    __e_setsyscmd grep GREP
 
     if [ ! -x "$_TERMREAD" ]; then
         if [ -x "${PWD}/termread" ]; then
@@ -452,15 +596,15 @@ _q_getterm ()
         elif [ -x "${HOME}/bin/termread" ]; then
             _TERMREAD="${HOME}/bin/termread"
         else
-            _e_setsyscmd -b termread _TERMREAD
+            __e_setsyscmd -b termread _TERMREAD
         fi
     fi
     if [ ! -x "$_TERMREAD" ]; then
         if [ -r "${PWD}/termread.c" ]
         then
-            _e_setsyscmd -b gcc _CC
+            __e_setsyscmd -b gcc _CC
             if [ ! -x "$_CC" ]; then
-                _e_setsyscmd -b cc1 _CC
+                __e_setsyscmd -b cc1 _CC
             fi
             if [ -x "$_CC" ]
             then
@@ -475,7 +619,7 @@ _q_getterm ()
         _TERMREAD="${PWD}/termread"
     fi
     if [ ! -x "$_TERMREAD" ]; then
-        _debug_p "Unable to locate termread."
+        __debug_p "Unable to locate termread."
         return 1
     fi
 
@@ -486,58 +630,58 @@ _q_getterm ()
     unset _TM_EMOJI
 
     eval `${_TERMREAD} '!' -t`
-    _debug_p '...Primary DA "'$TERMID'".'
+    __debug_p '...Primary DA "'$TERMID'".'
 
     if [ -z "${TERMID}" ]; then
-        _debug_p "No response to 'Primary DA'"
+        __debug_p "No response to 'Primary DA'"
         # If it didn't answer to the xterm user9, then no color.
         _TM_COLORS=0; export _TM_COLORS
         eval `TERM="vt52" ${_TERMREAD} -t`
-        _debug_p "Read DECID '"${TERMID}"'."
+        __debug_p "Read DECID '"${TERMID}"'."
         if [ -z "${TERMID}" ]
         then
-            _debug_p "No response to 'DECID'"
+            __debug_p "No response to 'DECID'"
             return 1
         elif [ '\033/Z' = "${TERMID}" ]
         then
-            _debug_p "xterm in vt52 mode"
+            __debug_p "xterm in vt52 mode"
             # I can only assume this is an xterm running in vt52 emulation
-            _set_term_fallback xterm-vt52 vt52-basic vt52 vt52h vt50
+            __set_term_fallback xterm-vt52 vt52-basic vt52 vt52h vt50
             if [ "0" = "$?" ]; then
                 _TERMSET=1
             fi
         elif [ '\033/A' = "${TERMID}" ]
         then
-            _debug_p "Response code for real vt50"
-            _set_term_fallback vt50
+            __debug_p "Response code for real vt50"
+            __set_term_fallback vt50
             if [ "0" = "$?" ]; then
                 _TERMSET=1
             fi
         elif [ '\033/H' = "${TERMID}" ]
         then
-            _debug_p "Response code for real vt50h"
-            _set_term_fallback vt50h vt50
+            __debug_p "Response code for real vt50h"
+            __set_term_fallback vt50h vt50
             if [ "0" = "$?" ]; then
                 _TERMSET=1
             fi
         elif [ '\033/J' = "${TERMID}" ]
         then
-            _debug_p "Response code for real vt50j"
-            _set_term_fallback vt50j vt50h vt50
+            __debug_p "Response code for real vt50j"
+            __set_term_fallback vt50j vt50h vt50
             if [ "0" = "$?" ]; then
                 _TERMSET=1
             fi
         elif [ '\033/K' = "${TERMID}" ]
         then
-            _debug_p "Response code for real vt52"
-            _set_term_fallback vt52 vt50h vt50
+            __debug_p "Response code for real vt52"
+            __set_term_fallback vt52 vt50h vt50
             if [ "0" = "$?" ]; then
                 _TERMSET=1
             fi
         elif [ '\033/L' = "${TERMID}" ]
         then
-            _debug_p "Response code for real vt52b"
-            _set_term_fallback vt52b vt52 vt50h vt50
+            __debug_p "Response code for real vt52b"
+            __set_term_fallback vt52b vt52 vt50h vt50
             if [ "0" = "$?" ]; then
                 _TERMSET=1
             fi
@@ -545,36 +689,36 @@ _q_getterm ()
         return 1
     fi
 
-    eval `"${_TERMREAD}" '!' -e23`
-    if [ -n "$ENQ" ]
-    then
-        _debug_p '..........ENQ "'$ENQ'".'
-    else
-        _debug_p '..........ENQ is empty.'
-    fi
+    eval `"${_TERMREAD}" '!' -23e`
     if [ -n "$TERM2DA" ]
     then
-        _debug_p '.Secondary DA "'$TERM2DA'".'
+        __debug_p '.Secondary DA "'$TERM2DA'".'
     else
-        _debug_p '.Secondary DA is empty.'
+        __debug_p '.Secondary DA is empty.'
     fi
     if [ -n "$TERM3DA" ]
     then
-        _debug_p '..Tertiary DA "'$TERM3DA'".'
+        __debug_p '..Tertiary DA "'$TERM3DA'".'
     else
-        _debug_p '..Tertiary DA is empty.'
+        __debug_p '..Tertiary DA is empty.'
+    fi
+    if [ -n "$ENQ" ]
+    then
+        __debug_p '..........ENQ "'$ENQ'".'
+    else
+        __debug_p '..........ENQ is empty.'
     fi
     if [ "0" = "$_TERMSET" -a -n "$ENQ" ]
     then
         if [ "PuTTY" = "$ENQ" ]
         then
-            _debug_p "PuTTY response"
+            __debug_p "PuTTY response"
             _known_terminal "putty"
         elif [ '\033[?1;2c' = "$ENQ" \
             -a '\033[?1;2c' = "$TERMID" \
             -a '\033[>85;95;0c' = "${TERM2DA}" ]
         then
-            _debug_p "rxvt-unicode-256color (double enq)"
+            __debug_p "rxvt-unicode-256color (double enq)"
             _known_terminal "rxvt-unicode-256color"
         fi
     fi
@@ -582,160 +726,93 @@ _q_getterm ()
     then
       case "$TERMID" in
         '\033[?6c')
-            _debug_p "vt102 Primary DA response."
+            __debug_p "vt102 Primary DA response."
             if [ -z "$TERM2DA" ]
             then
-                ## THIS IS A BAD CALL, HONESTLY
-                ## Nothing in the vt100 range originally responded to
-                ## Secondary DA (it didn't exist yet), but
-                ## every other terminal emulator gives us SOME
-                ## other response.
-                _debug_p "No Secondary DA, maybe console, or even st"
+                __debug_p "No Secondary DA, maybe linux console?"
                 _known_terminal "vt102"
-            elif [ '\033[?6c' = "${TERM2DA}" ]
-            then
-                _debug_p "JetBrains JediTerm (VT420 pretending to VT102)"
-                _known_terminal "JediTerm"
-            elif [ '\033[>0;2300;1c' = "${TERM2DA}" -a -z "${TERM3DA}" ]
-            then
-                _debug_p "vt102 + alacritty response"
-                _TM_COLORS=256;     export _TM_COLORS
-                _TM_TRUECLR=1;      export _TM_TRUCLR
-                _TM_TRUEMODE=colon; export _TM_TRUEMODE
-                _set_term_fallback_x alacritty rio
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
-                fi
-            elif [ '\033[>0;1901;1c' = "${TERM2DA}" -a -z "${TERM3DA}"  ]
-            then
-                _debug_p "vt102 + alacritty response"
-                _TM_COLORS=256;     export _TM_COLORS
-                _TM_TRUECLR=1;      export _TM_TRUCLR
-                _TM_TRUEMODE=colon; export _TM_TRUEMODE
-                _set_term_fallback_x alacritty rio
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
-                fi
-            elif [ '\033[>0;136;0c' = "${TERM2DA}" ]
-            then
-                # PuTTY if ENQ is not set to PuTTY
-                _debug_p "vt102 + PuTTY response"
-                _TM_EMOJI=1;       export _TM_EMOJI
-                _TM_PUTTY=1;       export _TM_PUTTY
-                _TM_COLORS=256;    export _TM_COLORS
-                # TRUECLR verified on Windows PuTTY 0.76 (colon ignored)
-                _TM_TRUECLR=1;     export _TM_TRUCLR
-                _TM_TRUEMODE=semi; export _TM_TRUEMODE
-                _set_term_fallback_x "putty-256color" "putty" "xterm-256color"
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
-                fi
             else
-                _debug_p "Unknown vt102 clone."
-                # NOT PUTTY
-                _TM_COLORS=0;   export _TM_COLORS
-                _set_term_fallback_x vt102
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
-                fi
+              case "$TERM2DA" in
+                '\033[>0;136;0c')
+                    # PuTTY if ENQ is not set to PuTTY
+                    __debug_p "vt102 + PuTTY response"
+                    _known_terminal "putty"
+                    ;;
+                '\033[?6c')
+                    __debug_p "JetBrains JediTerm (VT420 pretending to VT102)"
+                    _known_terminal "JediTerm"
+                    ;;
+                '\033[>0;2'?'00;1c')
+                    __debug_p "alacritty response"
+                    _known_terminal "alacritty"
+                    ;;
+                '\033[>0;1901;1c')
+                    __debug_p "alacritty response"
+                    _known_terminal "alacritty"
+                    ;;
+                *)
+                    __debug_p "Unknown vt102 clone."
+                    _known_terminal "vt102"
+                    ;;
+              esac
             fi
             ;;
         '\033[?1;0c')
             # VT 101
-            _debug_p "vt101 Primary DA response."
+            __debug_p "vt101 Primary DA response."
             if [ '\033[>0;10;1c' = "${TERM2DA}" ]
             then
-                _debug_p "Windows Console / Microsoft Terminal (before 1.18.1421.0)"
-                _TM_EMOJI=1;    export _TM_EMOJI
-                _TM_COLORS=256; export _TM_COLORS
-                _set_term_fallback_x ms-terminal ms-vt-utf8 \
-                    ms-vt100+ ms-vt100-color xterm-256color
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
-                fi
+                __debug_p "Windows Console / Microsoft Terminal (before 1.18.1421.0)"
+                _known_terminal "msterm18"
             else
-                _debug_p "VT101 Response, specific type unknown"
-                # VT101 or Descendent
-                _TM_COLORS=0;   export _TM_COLORS
-                _set_term_fallback_x vt101
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
-                fi
+                __debug_p "VT101 Response, specific type unknown"
+                _known_terminal "vt101"
             fi
             ;;
         '\033[?1;2c')
     # \e[?1;2c : Claims to be a vt100
             # vt100 could mean...
-            _debug_p "vt100 Primary DA response."
+            __debug_p "vt100 Primary DA response."
             if [ '\033[>84;0;0c' = "$TERM2DA" ]
             then
-                _debug_p "Byobu terminal"
-                _TM_EMOJI=1;    export _TM_EMOJI
-                _TM_COLORS=256; export _TM_COLORS
-                _set_cterm_fallback xterm
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
-                fi
+                __debug_p "Byobu terminal"
+                _known_terminal "byobu"
             elif [ '\033[>0;115;0c' = "$TERM2DA" ]
             then
-    # \e[?1;2c : Claims to be a vt100
                 # Cool Retro Term or Konsole
-                _debug_p "Konsole"
-                _TM_EMOJI=1;       export _TM_EMOJI
-                _TM_COLORS=256;    export _TM_COLORS
-                _TM_TRUECLR=1;     export _TM_TRUCLR
-                # Internet claims new versions can do colon, but..
-                #  it doesn't work for me.
-                _TM_TRUEMODE=semi; export _TM_TRUEMODE
-                _set_term_fallback_x konsole-256color konsole xterm-256color
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
-                fi
+                __debug_p "Konsole"
+                _known_terminal "konsole"
             elif [ '\033[>1;95;0c' = "${TERM2DA}" ]
             then
-    # \e[?1;2c : Claims to be a vt100
                 # NeXT or macOS Terminal.app
-                _debug_p "Terminal.app"
-                _TM_EMOJI=1;        export _TM_EMOJI
-                _TM_COLORS=256;     export _TM_COLORS
-                _set_cterm_fallback nsterm xterm-256color xterm
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
-                fi
+                __debug_p "Terminal.app"
+                _known_terminal "terminal.app"
             elif [ '\033[>0;95;0c' = "${TERM2DA}" ]
             then
     # \e[?1;2c : Claims to be a vt100
                 # iTerm2
-                _debug_p "iTerm2.app (vt100 mode) up to ver 3.4.x"
-                _TM_COLORS=256;     export _TM_COLORS
-                _TM_ITERM2=1;       export _TM_ITERM2
-                _TM_TRUECLR=1;      export _TM_TRUCLR
-                _TM_TRUEMODE=colon; export _TM_TRUEMODE
-                _set_term_fallback_x iterm2 iTerm2.app xterm-256color
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
-                fi
+                __debug_p "iTerm2.app (vt100 mode) up to ver 3.4.x"
+                _known_terminal "iterm2"
             elif [ '\033[>85;95;0c' = "${TERM2DA}" ]
             then
-                _TM_EMOJI=0;        export _TM_EMOJI
-                _TM_COLORS=256;     export _TM_COLORS
-                _TM_TRUECLR=1;      export _TM_TRUECLR
-                _TM_TRUEMODE=colon; export _TM_TRUEMODE
-                _debug_p "rxvt-unicode-256color"
-                _set_term_fallback_x rxvt-unicode-256color xterm-256color
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
-                fi
-            elif [ "0" = "$_TERMSET" ]
+                __debug_p "rxvt-unicode-256color"
+                _known_terminal "rxvt-unicode-256color"
+            fi
+            if [ "0" = "$_TERMSET" ]
             then
     # \e[?1;2c : Claims to be a vt100
-                _TM_EMOJI=0;    export _TM_EMOJI
-                _TM_COLORS=0;   export _TM_COLORS
-                _debug_p "VT100 Primary DA response."
-                _set_term_fallback_x vt100-basic
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
+                if [ -z "$TERM2DA" ]
+                then
+                    # Just like a REAL vt100, no Secondary DA.
+                    __debug_p "VT100 Primary DA response.  Set as VT100"
+                else
+                    # This HAS a secondary DA, but this doesn't have a
+                    # match for it (yet)?
+                    # Also, vt100 is a fairly basic terminal to claim to
+                    # be, it's begging the user to not expect features.
+                    __debug_p "Unknown vt100 Soft Terminal.  Set as VT100"
                 fi
+                _known_terminal "vt100"
             fi
             ;;
         '\033[?65;1;9c')
@@ -744,59 +821,28 @@ _q_getterm ()
             # xfce4-terminal and gnome-terminal both
             # respond identically, and I've never found
             # a non-VTE terminal with this primary DA.
-            _debug_p "vt500 - VTE response (Gnome, Xfce4)"
+            __debug_p "vt500 - VTE response (Gnome, Xfce4)"
             # Should respond to TERM_BG and COLOR
-            _TM_EMOJI=1;        export _TM_EMOJI
-            _TM_COLORS=256;     export _TM_COLORS
-            _TM_TRUECLR=1;      export _TM_TRUCLR
-            _TM_TRUEMODE=colon; export _TM_TRUEMODE
-            _set_term_fallback_x vte-256color gnome-256color vte gnome \
-                xterm-256color
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
+            _known_terminal "vte"
             ;;
         '\033[?65;4;6;18;22c')
     # \e[?65;4;6;18;22c : VT500 - Wezterm with Sixel specific
-            _debug_p "wezterm with sixel"
-            _TM_EMOJI=1;        export _TM_EMOJI
-            _TM_COLORS=256;     export _TM_COLORS
-            _TM_TRUECLR=1;      export _TM_TRUCLR
-            _TM_TRUEMODE=colon; export _TM_TRUEMODE
-            _TM_KITTY=1;        export _TM_KITTY
-            _TM_ITERM2=1;       export _TM_ITERM2
-            _set_cterm_fallback wezterm-direct wezterm \
-                vt525 vt525-basic vt520 vt520-basic \
-                vt420-basic vt420 vt320-basic vt320 xterm
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
+            __debug_p "wezterm with sixel"
+            _known_terminal "wezterm"
             ;;
         '\033[?65;22;314;1;28;4;8c')
-            _debug_p "Contour"
-            _TM_EMOJI=1;        export _TM_EMOJI
-            _TM_COLORS=256;     export _TM_COLORS
-            _TM_TRUECLR=1;      export _TM_TRUCLR
-            _TM_TRUEMODE=colon; export _TM_TRUEMODE
-            _TM_KITTY=0;        export _TM_KITTY
-            _TM_ITERM2=0;       export _TM_ITERM2
-            _set_cterm_fallback contour contour-direct \
-                vt525 vt525-basic vt520 vt520-basic \
-                vt420-basic vt420 vt320-basic vt320 xterm
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
+            __debug_p "Contour"
+            _known_terminal "contour"
+            ;;
+        '\033[?65;'*';22;'*c)
+    # \e[?65;*c : VT500 Clone of Some Sort
+            __debug_p "vt500 series or clone with color"
+            _known_terminal "vt500c"
             ;;
         '\033[?65;'*c)
     # \e[?65;*c : VT500 Clone of Some Sort
-            _debug_p "vt500 series or clone"
-            _TM_COLORS=0; export _TM_COLORS
-            _set_term_fallback_x vt525-basic vt525 vt520-basic vt520 \
-                vt420-basic vt420 vt320-basic vt320 \
-                vt300 vt220-basic vt220 vt200
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
+            __debug_p "vt500 series or clone"
+            _known_terminal "vt500"
             ;;
         '\033[?64;1;2;4;6;17;18;21;22c')
     # \e[?65;*c : VT420 -- iTerm2 v3.5 and up
@@ -808,282 +854,138 @@ _q_getterm ()
             #       PRIMARY DA  : \e[?64;1;2;4;6;17;18;21;22c
             #       SECONDARY DA: \e[>0;95;0c
             #       TERTIARY DA : <null>
-            _debug_p "iTerm2 from v 3.5"
-            _TM_COLORS=256;     export _TM_COLORS
-            _TM_ITERM2=1;       export _TM_ITERM2
-            _TM_TRUECLR=1;      export _TM_TRUCLR
-            _TM_TRUEMODE=colon; export _TM_TRUEMODE
-            _set_cterm_fallback iterm2 iTerm2.app xterm
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
+            __debug_p "iTerm2 from v 3.5"
+            _known_terminal "iterm2"
             ;;
         '\033[?64;1;2;6;9;15;16;17;18;21;22;28c')
     # \e[?64;1;2;6;9;15;16;17;18;21;22;28c : VT420 mode of xterm
-            _debug_p "xterm in vt420 mode"
-            _TM_COLORS=256;    export _TM_COLORS
-            _TM_TRUECLR=1;     export _TM_TRUCLR
-            _TM_TRUEMODE=semi; export _TM_TRUEMODE
-            _set_term_fallback_x xterm-256color
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
+            __debug_p "xterm in vt420 mode"
+            _known_terminal "xterm420"
             ;;
         '\033[?64;1;9;15;21;22c')
     # \e[?64;1;9;15;21;22c : VT420 mode of zutty
-            _debug_p "zutty in vt420 mode"
-            _TM_EMOJI=0;    export _TM_EMOJI
-            _TM_NOSTATUS=1; export _TM_NOSTATUS
-            _TM_COLORS=256; export _TM_COLORS
-            # Verified on Debian 12 zutty
-            # Verified on Ubuntu 22.04 zutty
-            _TM_TRUECLR=1; export _TM_TRUCLR
-            # Colon prints junk (not just ignored)
-            _TM_TRUEMODE=semi; export _TM_TRUEMODE
-            _set_term_fallback_x zutty xterm-256color
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
+            __debug_p "zutty in vt420 mode"
+            _known_terminal "zutty"
             ;;
         '\033[?64;'*c)
     # \e[?64;*c : VT4XX Clone of Some Sort
-            _debug_p "vt420 series or clone"
-            _TM_EMOJI=0;  export _TM_EMOJI
-            _TM_COLORS=0; export _TM_COLORS
-            _set_term_fallback_x vt420-basic vt420 vt320-basic vt320 \
-                vt300 vt220-basic vt220 vt200
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
+            __debug_p "vt420 series or clone"
+            _known_terminal "vt420"
             ;;
         '\033[?63;1;2;6;9;15;16;22;28c')
     # \e[?63;1;2;6;9;15;16;22;28c : VT320 mode of xterm
-            _debug_p "xterm in vt320 mode"
-            _TM_COLORS=256; export _TM_COLORS
-            _set_term_fallback_x xterm-vt320 vt320 vt300 xterm-256color
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
+            __debug_p "xterm in vt320 mode"
+            _known_terminal "xterm320"
             ;;
         '\033[?63;1;2;4;6;9;15;16;22;28c')
     # \e[?63;1;2;4;6;9;15;16;22;28c : VT340 mode of xterm
-            _debug_p "xterm in vt340 mode"
-            _TM_COLORS=256; export _TM_COLORS
-            _set_term_fallback_x xterm-vt340 vt340 xterm-vt320 \
-                vt320 vt300 xterm-256color
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
+            __debug_p "xterm in vt340 mode + sixel"
+            _known_terminal "xterm340"
             ;;
         '\033[?63;'*c)
     # \e[?63;*c : VT3xx Clone of Some Sort
-            _debug_p "vt320 or Clone"
             if [ 'xterm-256color' = "$TERM2DA" ]
             then
-                _debug_p "ConnectBot Android"
-                _TM_COLORS=256; export _TM_COLORS
-                _set_cterm_fallback xterm
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
-                fi
+                __debug_p "ConnectBot Android (vt340)"
+                _known_terminal "connectbot"
             else
-                _debug_p "Unknown subtype"
-                _TM_COLORS=0; export _TM_COLORS
-                _set_term_fallback_x vt320-basic vt320 vt300
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
-                fi
+                case "$TERM2DA" in
+                  '\033[>19;'*c)
+                    __debug_p "vt340 or clone"
+                    ;;
+                  *)
+                    __debug_p "vt320 or clone"
+                    ;;
+                esac
+                _known_terminal "vt320"
             fi
             ;;
-        '\033[?62;22c\033[>'*c)
-            _debug_p "Ghostty doubled PrimaryDA response"
-            case "$TERM2DA" in
-                '\033[>1;10;0c')
-                    # Ghostty (at least on macOS)
-                    _debug_p "Ghostty"
-                    _TM_COLORS=256; export _TM_COLORS
-                    _TM_TRUECLR=1;  export _TM_TRUCLR
-                    _set_term_fallback_x Ghostty ghostty xterm-ghostty \
-                        vt240 xterm-vt220 vt220 vt200 xterm-256color
-                    if [ "0" = "$?" ]; then
-                        _TERMSET=1
-                    fi
-                    ;;
-                default)
-                    _debug_p "Secondary DA unrecognized"
-                    _TM_COLORS=0; export _TM_COLORS
-                    _set_term_fallback_x xterm-vt240 vt240 xterm-vt220 \
-                        vt220 vt200 xterm-256color
-                    if [ "0" = "$?" ]; then
-                        _TERMSET=1
-                    fi
-                    ;;
-            esac
-            ;;
         '\033[?62;22c')
-            _debug_p "VT240 Clone ([?62; with feature 22)"
+            # Ha, VT240 didn't have capability 22, though it DID have color
+            __debug_p "vt240 (+ feature 22 [vt500 feature string])"
             case "$TERM2DA" in
                 '\033[>1;10;0c')
                     # Ghostty (at least on macOS)
-                    _debug_p "Ghostty"
-                    _TM_COLORS=256; export _TM_COLORS
-                    _TM_TRUECLR=1;  export _TM_TRUCLR
-                    _set_term_fallback_x Ghostty ghostty xterm-ghostty \
-                        vt240 xterm-vt220 vt220 vt200 xterm-256color
-                    if [ "0" = "$?" ]; then
-                        _TERMSET=1
-                    fi
+                    __debug_p "Ghostty"
+                    _known_terminal "ghostty"
                     ;;
-                default)
-                    _debug_p "Secondary DA unrecognized"
-                    _TM_COLORS=0; export _TM_COLORS
-                    _set_term_fallback_x xterm-vt240 vt240 xterm-vt220 \
-                        vt220 vt200 xterm-256color
-                    if [ "0" = "$?" ]; then
-                        _TERMSET=1
-                    fi
+                *)
+                    __debug_p "Secondary DA unrecognized"
+                    _known_terminal "vt240"
                     ;;
             esac
             ;;
         '\033[?62;1;2;4;6;9;15;16;22;28c')
     # \e[?62;1;2;4;6;9;15;16;22;28c : VT240 mode of xterm
-            _debug_p "xterm in vt240 mode ([?62; with feature 4)"
-            _TM_COLORS=256; export _TM_COLORS
-            _set_term_fallback_x xterm-vt240 vt240 xterm-vt220 \
-                vt220 vt200 xterm-256color
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
+            __debug_p "xterm in vt240 mode (sixel)"
+            _known_terminal "xterm240"
             ;;
         '\033[?62;1;2;6;9;15;16;22;28c')
     # \e[?62;1;2;6;9;15;16;22;28c : VT220 mode of xterm
-            _debug_p "xterm in vt220 mode ([?62; without feature 4)"
-            _TM_COLORS=256; export _TM_COLORS
-            _set_term_fallback_x xterm-vt220 vt220 vt200 xterm-256color
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
+            __debug_p "xterm in vt240 mode"
+            _known_terminal "xterm240"
             ;;
         '\033[?62;1;2;4;6;8;9;15c')
             # Secondary ">1;123;0c"
-            _debug_p "jvt220 (no terminfo)."
-            _TTY_COLORS=256; export _TTY_COLORS
-            _set_term_fallback_x xterm-vt220 vt220 vt200 xterm-256color
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
-            ;;
-        '\033[?62'*';4'*'c')
-    # \e[?62;*4*c : VT240 Clone...
-            _debug_p "VT240 Clone (feature 4)"
-            case "$TERM2DA" in
-                '\033[>0;115;0c')
-                    # Very old entry, not recently validated
-                    _debug_p "Konsole"
-                    _TM_EMOJI=1;    export _TM_EMOJI
-                    _TM_COLORS=256; export _TM_COLORS
-                    _set_term_fallback_x konsole-256color konsole xterm-256color
-                    if [ "0" = "$?" ]; then
-                        _TERMSET=1
-                    fi
-                    ;;
-                '\033[>0;95;0c')
-                    # from macOS m4 iTerm2 version 3.4.23...
-                    #       PRIMARY DA  : \e[?62;4c
-                    #       SECONDARY DA: \e[>0;95;0c
-                    #       TERTIARY DA : <null>
-                    _debug_p "iTerm2 (vt240 mode) 3.4.23 or older"
-                    _TM_COLORS=256; export _TM_COLORS
-                    _TM_EMOJI=1;    export _TM_EMOJI
-                    _set_cterm_fallback iterm2 iTerm2.app xterm
-                    if [ "0" = "$?" ]; then
-                        _TERMSET=1
-                    fi
-                    ;;
-                '\033[>1;4000;'*c)
-                    # ;15c (Ubuntu) and ;29c (macOS), so I'm starring it
-                    _debug_p "Secondary DA looks like kitty"
-                    _TM_COLORS=256;     export _TM_COLORS
-                    _TM_EMOJI=1;        export _TM_EMOJI
-                    _TM_KITTY=1;        export _TM_KITTY
-                    # Verified on Ubuntu 22.04 kitty
-                    _TM_TRUECLR=1;      export _TM_TRUCLR
-                    _TM_TRUEMODE=colon; export _TM_TRUEMODE
-                    _set_cterm_fallback xterm-kitty kitty-direct kitty \
-                        xterm-vt240 vt240 xterm-vt220 vt220 vt200 \
-                        xterm
-                    if [ "0" = "$?" ]; then
-                        _TERMSET=1
-                    fi
-                    ;;
-                default)
-                    _debug_p "Unknown vt240 descendent"
-                    _TM_COLORS=0;   export _TM_COLORS
-                    _set_term_fallback_x vt220-basic
-                    if [ "0" = "$?" ]; then
-                        _TERMSET=1
-                    fi
-                    ;;
-            esac
+            __debug_p "jvt220 (no terminfo)."
+            _known_terminal "xterm240"
             ;;
         '\033[?62;1;4c')
     # \e[?62;1;4c : VT240 Clone...
             if [ '\033[>0;115;0c' = "$TERM2DA" ]
             then
                 # Very old entry, not recently validated
-                _debug_p "Konsole"
-                _TM_EMOJI=1;    export _TM_EMOJI
-                _TM_COLORS=256; export _TM_COLORS
-                _set_term_fallback_x konsole-256color konsole xterm-256color
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
-                fi
+                __debug_p "Konsole"
+                _known_terminal "konsole-old"
             else
-                _debug_p "Unknown vt240 descendent"
-                _TM_COLORS=0;   export _TM_COLORS
-                _set_term_fallback_x vt220-basic
-                if [ "0" = "$?" ]; then
-                    _TERMSET=1
-                fi
+                __debug_p "Unknown vt240 descendent"
+                _known_terminal "vt240"
             fi
             ;;
-        '\033[?62;'*c)
-    # \e[?62;*c : VT200 Clone...
-            _debug_p "vt200 or Clone"
+        '\033[?62'*';4'*c)
+    # \e[?62;*4*c : VT240 Clone...
+            __debug_p "VT240 Clone (sixel)"
             case "$TERM2DA" in
+                '\033[>0;115;0c')
+                    # Very old entry, not recently validated
+                    __debug_p "Konsole"
+                    _known_terminal "konsole-old"
+                    ;;
                 '\033[>0;95;0c')
-                    _debug_p "iTerm2 (vt220 mode) 3.4.23 or older"
-                    _TM_COLORS=256; export _TM_COLORS
-                    _TM_EMOJI=1;    export _TM_EMOJI
-                    _set_cterm_fallback iterm2 iTerm2.app xterm-vt220 xterm
-                    if [ "0" = "$?" ]; then
-                        _TERMSET=1
-                    fi
+                    # from macOS m4 iTerm2 version 3.4.23...
+                    #       PRIMARY DA  : \e[?62;4c
+                    #       SECONDARY DA: \e[>0;95;0c
+                    #       TERTIARY DA : <null>
+                    __debug_p "iTerm2 (vt240 mode) 3.4.23 or older"
+                    _known_terminal "iterm2"
                     ;;
                 '\033[>1;4000;'*c)
                     # ;15c (Ubuntu) and ;29c (macOS), so I'm starring it
-                    _debug_p "Secondary DA looks like kitty"
-                    _TM_COLORS=256;     export _TM_COLORS
-                    _TM_EMOJI=1;        export _TM_EMOJI
-                    _TM_KITTY=1;        export _TM_KITTY
-                    # Verified on Ubuntu 22.04 kitty
-                    _TM_TRUECLR=1;      export _TM_TRUCLR
-                    _TM_TRUEMODE=colon; export _TM_TRUEMODE
-                    _set_cterm_fallback xterm-kitty kitty-direct kitty \
-                        xterm-vt240 vt240 xterm-vt220 vt220 vt200 \
-                        xterm
-                    if [ "0" = "$?" ]; then
-                        _TERMSET=1
-                    fi
+                    __debug_p "Secondary DA looks like kitty"
+                    _known_terminal "kitty"
                     ;;
-                default)
-                    _debug_p "Secondary DA unrecognized"
-                    _TM_COLORS=0; export _TM_COLORS
-                    _set_term_fallback_x xterm-vt240 vt240 xterm-vt220 \
-                        vt220 vt200 xterm-256color
-                    if [ "0" = "$?" ]; then
-                        _TERMSET=1
-                    fi
+                *)
+                    __debug_p "Unknown vt220 descendent"
+                    _known_terminal "vt240"
+                    ;;
+            esac
+            ;;
+        '\033[?62;'*c)
+    # \e[?62;*c : VT200 Clone...
+            __debug_p "vt200 or Clone"
+            case "$TERM2DA" in
+                '\033[>0;95;0c')
+                    __debug_p "iTerm2 (vt220 mode) 3.4.23 or older"
+                    _known_terminal "iterm2"
+                    ;;
+                '\033[>1;4000;'*c)
+                    # ;15c (Ubuntu) and ;29c (macOS), so I'm starring it
+                    __debug_p "Secondary DA looks like kitty"
+                    _known_terminal "kitty"
+                    ;;
+                *)
+                    __debug_p "Secondary DA unrecognized"
+                    _known_terminal "vt240"
                     ;;
             esac
             ;;
@@ -1093,26 +995,17 @@ _q_getterm ()
             # xfce4-terminal and gnome-terminal both
             # respond identically, and I've never found
             # a non-VTE terminal with this primary DA.
-            _debug_p "Non-DEC-DEC - VTE response (Gnome, Xfce4)"
+            __debug_p "Non-DEC-DEC - VTE response (Gnome, Xfce4)"
             _known_terminal vte
             ;;
         '\033[?61;1;21;22c')
             # \e[?61;1;21;22c : VTE on Manjaro libvte-2.91 (older)
-            _debug_p "Non-DEC-DEC - VTE response (Gnome, Xfce4)"
+            __debug_p "Non-DEC-DEC - VTE response (Gnome, Xfce4)"
             _known_terminal vte
             ;;
         '\033[?61;6;7;22;23;24;28;32;42c')
-            _debug_p "Microsoft Terminal (since 1.18.1421.0)"
-            _TM_COLORS=256;    export _TM_COLORS
-            _TM_EMOJI=1;       export _TM_EMOJI
-            _TM_TRUECLR=1;     export _TM_TRUCLR
-            _TM_TRUEMODE=semi; export _TM_TRUEMODE
-            _set_cterm_fallback ms-terminal ms-vt-utf8 \
-                ms-vt100+ ms-vt100-color xterm-256color \
-                xterm
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
+            __debug_p "Microsoft Terminal (since 1.18.1421.0)"
+            _known_terminal "msterminal"
             ;;
         '\033[?61;6;7;21;22;23;24;28;32;42c')
             # Microsoft Terminal on Windows 11 v 1.19.10573.0
@@ -1120,65 +1013,36 @@ _q_getterm ()
             #       TERMID='\033[?61;6;7;21;22;23;24;28;32;42c'; export TERMID;
             #       TERM2DA='\033[>0;10;1c'; export TERM2DA;
             #       TERM3DA='\033P!|00000000\033\'; export TERM3DA;
-            _debug_p "Microsoft Terminal (since 1.19.10573.0)"
-            _TM_COLORS=256;     export _TM_COLORS
-            _TM_EMOJI=1;        export _TM_EMOJI
-            # Verified on Windows 11
-            _TM_TRUECLR=1;      export _TM_TRUCLR
-            _TM_TRUEMODE=colon; export _TM_TRUEMODE
-            _set_cterm_fallback ms-terminal ms-vt-utf8 \
-                ms-vt100+ ms-vt100-color xterm-256color \
-                xterm
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
+            __debug_p "Microsoft Terminal (since 1.19.10573.0)"
+            _known_terminal "msterminal"
             ;;
         '\033[?61;6;7;14;21;22;23;24;28;32;42c')
             # Microsoft Terminal on Windows 11 v 1.21.2911.0
-            _debug_p "Microsoft Terminal (since 1.21.2911.0)"
-            _TM_COLORS=256;     export _TM_COLORS
-            _TM_EMOJI=1;        export _TM_EMOJI
-            # Verified on Windows 11
-            _TM_TRUECLR=1;      export _TM_TRUCLR
-            _TM_TRUEMODE=colon; export _TM_TRUEMODE
-            _set_cterm_fallback ms-terminal ms-vt-utf8 \
-                ms-vt100+ ms-vt100-color xterm-256color \
-                xterm
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
+            __debug_p "Microsoft Terminal (since 1.21.2911.0)"
+            _known_terminal "msterminal"
             ;;
         '\033[?61;4;6;7;14;21;22;23;24;28;32;42c')
             # Microsoft Terminal on Windows 11 v 1.22.10731.0
             #TERM2DA='\033[>0;10;1c'; export TERM2DA; 
             #TERM3DA='\033P!|00000000\033\'; export TERM3DA; 
-            _debug_p "Microsoft Terminal (since 1.22.10731.0)"
-            _TM_COLORS=256;     export _TM_COLORS
-            _TM_EMOJI=1;        export _TM_EMOJI
-            # Verified on Windows 11
-            _TM_TRUECLR=1;      export _TM_TRUCLR
-            _TM_TRUEMODE=colon; export _TM_TRUEMODE
-            _set_cterm_fallback ms-terminal ms-vt-utf8 \
-                ms-vt100+ ms-vt100-color xterm-256color \
-                xterm
-            if [ "0" = "$?" ]; then
-                _TERMSET=1
-            fi
+            __debug_p "Microsoft Terminal (since 1.22.10731.0 - sixel)"
+            _known_terminal "msterminal"
             ;;
       esac
     fi
 
     if [ "1" = "$_TERMSET" ]
     then
+        unset ENQ
         unset TERMID
         unset TERM2DA
         unset TERM3DA
         return 0
     fi
 
-    _debug_p "TERMID='"$TERMID"'"
-    _debug_p "TERM2DA='"$TERM2DA"'"
-    _debug_p "Terminal Type Unknown: Trying to figure out color response."
+    __debug_p "TERMID='"$TERMID"'"
+    __debug_p "TERM2DA='"$TERM2DA"'"
+    __debug_p "Terminal Type Unknown: Trying to figure out color response."
 
     unset result
     eval `"${_TERMREAD}" '!' -c 231 --var result`
@@ -1188,7 +1052,7 @@ _q_getterm ()
         export _TM_COLORS
         if [ "$TERM" = 'xterm' ]
         then
-            _set_term_fallback_x xterm-256color xterm-16color xterm-color
+            __set_term_fallback_x xterm-256color xterm-16color xterm-color
         fi
         unset result
         return 0
@@ -1201,7 +1065,7 @@ _q_getterm ()
         export _TM_COLORS
         if [ "$TERM" = 'xterm' ]
         then
-            _set_term_fallback_x xterm-16color xterm-color
+            __set_term_fallback_x xterm-16color xterm-color
         fi
         unset result
         return 0
@@ -1214,7 +1078,7 @@ _q_getterm ()
         export _TM_COLORS
         if [ "$TERM" = 'xterm' ]
         then
-            _set_term_fallback_x xterm-color
+            __set_term_fallback_x xterm-color
         fi
         unset result
         return 0
@@ -1236,27 +1100,27 @@ do
         unset DEBUG
     elif [ "--help" = "$aa" ]
     then
-        _do_help
+        __do_help
         exit 0
     elif [ "-h" = "$aa" ]
     then
-        _do_help
+        __do_help
         exit 0
     else
-        DEBUG=1 _debug_p "Unrecognized argument: "$aa
-        _do_usage
+        DEBUG=1 __debug_p "Unrecognized argument: "$aa
+        __do_usage
         unset DEBUG
         exit 1
     fi
 done
-_q_getterm
+__q_getterm
 if [ "0" = "$?" ]
 then
     if [ -n "$DEBUG" ]
     then
         "$_ECHO" "# Recommended TERM:"
+        "$_ECHO" "TERM=$TERM"
     fi
-    "$_ECHO" "TERM=$TERM"
 fi
 unset DEBUG
 unset _TERMREAD
@@ -1264,3 +1128,22 @@ unset ARGS
 unset _SED
 unset _CC
 unset _ECHO
+unset -f __debug_p
+unset -f __e_setecho
+unset -f __e_setsyscmd
+unset -f __set_term_info_cx
+unset -f __set_term_info_x
+unset -f _known_terminal
+unset -f __cleanpath_pre
+unset -f __cleanpath_post
+unset -f __my_inpath
+unset -f __my_inpath_quiet
+unset -f __my_inpath_first
+unset -f __q_terminfo_dirs
+unset -f __find_terminfo
+unset -f __set_cterm_fallback
+unset -f __set_term_fallback
+unset -f __set_term_fallback_x
+unset -f __do_usage
+unset -f __do_help
+unset -f __q_getterm
