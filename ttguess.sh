@@ -995,7 +995,7 @@ __q_getterm ()
             # xfce4-terminal and gnome-terminal both
             # respond identically, and I've never found
             # a non-VTE terminal with this primary DA.
-            __debug_p "Non-DEC-DEC - VTE response (Gnome, Xfce4)"
+            __debug_p "VTE response (Gnome, Xfce4, ptyxis)"
             _known_terminal vte
             ;;
         '\033[?61;1;21;22c')
