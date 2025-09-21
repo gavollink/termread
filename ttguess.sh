@@ -131,7 +131,7 @@ __set_term_info_cx()
         _TM_EMOJI=$(echo $INFO | awk -F: '{print $1}'); export _TM_EMOJI
         _TM_COLORS=$(echo $INFO | awk -F: '{print $2}'); export _TM_COLORS
         _TM_TRUECLR=$(echo $INFO | awk -F: '{print $3}'); export _TM_TRUECLR
-        if [ "1" == "$_TM_TRUECOLOR" ]
+        if [ "1" = "$_TM_TRUECOLOR" ]
         then
             _TM_TRUEMODE=$(echo $INFO | awk -F: '{print $4}')
             export _TM_TRUEMODE
@@ -225,7 +225,7 @@ _known_terminal()
             __set_term_info_x "0:2:0" vt100-basic vt100
             ;;
         byobu)
-            _set_term_info_c "1:256:0" xterm
+            __set_term_info_cx "1:256:0" xterm
             ;;
         konsole)
             __set_term_info_x "1:256:1:semi" \
@@ -291,14 +291,18 @@ _known_terminal()
             ;;
         connectbot)
             # Surprisingly, no Emoji support
-            _set_term_info_c "0:256:1:colon" xterm
+            __set_term_info_cx "0:256:1:colon" xterm
             ;;
-        vt320)
+        vt340)
             # There was NOT a color VT340 and capability code 22 didn't
             # exist until the 500 series, HOWEVER, I've yet to run
             # into a modern virtual terminal that pretends to support
             # vt200+ that doesn't support 256 colors.
-            _set_term_info_c "0:256:0" xterm
+            __set_term_info_cx "0:256:0" xterm
+            ;;
+        vt320)
+            # Same as above
+            __set_term_info_cx "0:256:0" xterm
             ;;
         ghostty)
             __set_term_info_x "1:256:1:colon" ghostty xterm-ghostty \
@@ -306,7 +310,7 @@ _known_terminal()
             ;;
         vt240)
             # One of the few color supporting DEC terminals.
-            _set_term_info_c "0:256:0" xterm-vt240 vt240 xterm
+            __set_term_info_cx "0:256:0" xterm-vt240 vt240 xterm
             ;;
         xterm240)
             __set_term_info_x "0:256:0" xterm-vt240 xterm-256color
@@ -724,182 +728,190 @@ __q_getterm ()
     fi
     if [ "0" = "$_TERMSET" ]
     then
-      case "$TERMID" in
-        '\033[?6c')
-            __debug_p "vt102 Primary DA response."
-            if [ -z "$TERM2DA" ]
-            then
-                __debug_p "No Secondary DA, maybe linux console?"
-                _known_terminal "vt102"
-            else
-              case "$TERM2DA" in
-                '\033[>0;136;0c')
-                    # PuTTY if ENQ is not set to PuTTY
-                    __debug_p "vt102 + PuTTY response"
-                    _known_terminal "putty"
-                    ;;
-                '\033[?6c')
-                    __debug_p "JetBrains JediTerm (VT420 pretending to VT102)"
-                    _known_terminal "JediTerm"
-                    ;;
-                '\033[>0;2'?'00;1c')
-                    __debug_p "alacritty response"
-                    _known_terminal "alacritty"
-                    ;;
-                '\033[>0;1901;1c')
-                    __debug_p "alacritty response"
-                    _known_terminal "alacritty"
-                    ;;
-                *)
-                    __debug_p "Unknown vt102 clone."
-                    _known_terminal "vt102"
-                    ;;
-              esac
-            fi
-            ;;
-        '\033[?1;0c')
-            # VT 101
-            __debug_p "vt101 Primary DA response."
-            if [ '\033[>0;10;1c' = "${TERM2DA}" ]
-            then
-                __debug_p "Windows Console / Microsoft Terminal (before 1.18.1421.0)"
-                _known_terminal "msterm18"
-            else
-                __debug_p "VT101 Response, specific type unknown"
-                _known_terminal "vt101"
-            fi
-            ;;
-        '\033[?1;2c')
-    # \e[?1;2c : Claims to be a vt100
-            # vt100 could mean...
-            __debug_p "vt100 Primary DA response."
-            if [ '\033[>84;0;0c' = "$TERM2DA" ]
-            then
-                __debug_p "Byobu terminal"
-                _known_terminal "byobu"
-            elif [ '\033[>0;115;0c' = "$TERM2DA" ]
-            then
-                # Cool Retro Term or Konsole
-                __debug_p "Konsole"
-                _known_terminal "konsole"
-            elif [ '\033[>1;95;0c' = "${TERM2DA}" ]
-            then
-                # NeXT or macOS Terminal.app
-                __debug_p "Terminal.app"
-                _known_terminal "terminal.app"
-            elif [ '\033[>0;95;0c' = "${TERM2DA}" ]
-            then
-    # \e[?1;2c : Claims to be a vt100
-                # iTerm2
-                __debug_p "iTerm2.app (vt100 mode) up to ver 3.4.x"
-                _known_terminal "iterm2"
-            elif [ '\033[>85;95;0c' = "${TERM2DA}" ]
-            then
-                __debug_p "rxvt-unicode-256color"
-                _known_terminal "rxvt-unicode-256color"
-            fi
-            if [ "0" = "$_TERMSET" ]
-            then
-    # \e[?1;2c : Claims to be a vt100
+        case "$TERMID" in
+            '\033[?6c')
+                __debug_p "vt102 Primary DA response."
                 if [ -z "$TERM2DA" ]
                 then
-                    # Just like a REAL vt100, no Secondary DA.
-                    __debug_p "VT100 Primary DA response.  Set as VT100"
+                    # Originally, this condition was set as "TERM=linux"
+                    # which was honestly a bad call.
+                    # Nothing in the vt100 range originally responded to
+                    # Secondary DA (it didn't exist yet), but
+                    # every other terminal emulator gives us SOME
+                    # other response.
+                    ##_TM_COLORS=8; export _TM_COLORS
+                    ##_set_term_fallback_x linux vt102 # st
+                    ##_TERMSET=1
+                    __debug_p "No Secondary DA, maybe linux console?"
+                    _known_terminal "vt102"
                 else
-                    # This HAS a secondary DA, but this doesn't have a
-                    # match for it (yet)?
-                    # Also, vt100 is a fairly basic terminal to claim to
-                    # be, it's begging the user to not expect features.
-                    __debug_p "Unknown vt100 Soft Terminal.  Set as VT100"
+                    case "$TERM2DA" in
+                        '\033[>0;136;0c')
+                            # PuTTY if ENQ is not set to PuTTY
+                            __debug_p "vt102 + PuTTY response"
+                            _known_terminal "putty"
+                            ;;
+                        '\033[?6c')
+                            __debug_p "JetBrains JediTerm (VT420 pretending to VT102)"
+                            _known_terminal "JediTerm"
+                            ;;
+                        '\033[>0;2'?'00;1c')
+                            __debug_p "alacritty response"
+                            _known_terminal "alacritty"
+                            ;;
+                        '\033[>0;1901;1c')
+                            __debug_p "alacritty response"
+                            _known_terminal "alacritty"
+                            ;;
+                        *)
+                            __debug_p "Unknown vt102 clone."
+                            _known_terminal "vt102"
+                            ;;
+                    esac
                 fi
-                _known_terminal "vt100"
-            fi
-            ;;
-        '\033[?65;1;9c')
-    # \e[?65;1;9c : VT500 - VTE on Debian/Ubuntu libvte-2.91
-            # Would try to separate this more but
-            # xfce4-terminal and gnome-terminal both
-            # respond identically, and I've never found
-            # a non-VTE terminal with this primary DA.
-            __debug_p "vt500 - VTE response (Gnome, Xfce4)"
-            # Should respond to TERM_BG and COLOR
-            _known_terminal "vte"
-            ;;
-        '\033[?65;4;6;18;22c')
-    # \e[?65;4;6;18;22c : VT500 - Wezterm with Sixel specific
-            __debug_p "wezterm with sixel"
-            _known_terminal "wezterm"
-            ;;
-        '\033[?65;22;314;1;28;4;8c')
-            __debug_p "Contour"
-            _known_terminal "contour"
-            ;;
-        '\033[?65;'*';22;'*c)
-    # \e[?65;*c : VT500 Clone of Some Sort
-            __debug_p "vt500 series or clone with color"
-            _known_terminal "vt500c"
-            ;;
-        '\033[?65;'*c)
-    # \e[?65;*c : VT500 Clone of Some Sort
-            __debug_p "vt500 series or clone"
-            _known_terminal "vt500"
-            ;;
-        '\033[?64;1;2;4;6;17;18;21;22c')
-    # \e[?65;*c : VT420 -- iTerm2 v3.5 and up
-            # from macOS M1 iTerm2 version 3.5.2 (homebrew)
-            #       PRIMARY DA  : \e[?64;1;2;4;6;17;18;21;22c
-            #       SECONDARY DA: \e[>41;2500;0c
-            #       TERTIARY DA : \eP!I69547260\e\
-            # from macOS M1 iTerm2 version 3.5??
-            #       PRIMARY DA  : \e[?64;1;2;4;6;17;18;21;22c
-            #       SECONDARY DA: \e[>0;95;0c
-            #       TERTIARY DA : <null>
-            __debug_p "iTerm2 from v 3.5"
-            _known_terminal "iterm2"
-            ;;
-        '\033[?64;1;2;6;9;15;16;17;18;21;22;28c')
-    # \e[?64;1;2;6;9;15;16;17;18;21;22;28c : VT420 mode of xterm
-            __debug_p "xterm in vt420 mode"
-            _known_terminal "xterm420"
-            ;;
-        '\033[?64;1;9;15;21;22c')
-    # \e[?64;1;9;15;21;22c : VT420 mode of zutty
-            __debug_p "zutty in vt420 mode"
-            _known_terminal "zutty"
-            ;;
-        '\033[?64;'*c)
-    # \e[?64;*c : VT4XX Clone of Some Sort
-            __debug_p "vt420 series or clone"
-            _known_terminal "vt420"
-            ;;
-        '\033[?63;1;2;6;9;15;16;22;28c')
-    # \e[?63;1;2;6;9;15;16;22;28c : VT320 mode of xterm
-            __debug_p "xterm in vt320 mode"
-            _known_terminal "xterm320"
-            ;;
-        '\033[?63;1;2;4;6;9;15;16;22;28c')
-    # \e[?63;1;2;4;6;9;15;16;22;28c : VT340 mode of xterm
-            __debug_p "xterm in vt340 mode + sixel"
-            _known_terminal "xterm340"
-            ;;
-        '\033[?63;'*c)
-    # \e[?63;*c : VT3xx Clone of Some Sort
-            if [ 'xterm-256color' = "$TERM2DA" ]
-            then
-                __debug_p "ConnectBot Android (vt340)"
-                _known_terminal "connectbot"
-            else
+                ;;
+            '\033[?1;0c')
+                # VT 101
+                __debug_p "vt101 Primary DA response."
+                if [ '\033[>0;10;1c' = "${TERM2DA}" ]
+                then
+                    __debug_p "Windows Console / Microsoft Terminal (before 1.18.1421.0)"
+                    _known_terminal "msterm18"
+                else
+                    __debug_p "VT101 Response, specific type unknown"
+                    _known_terminal "vt101"
+                fi
+                ;;
+            '\033[?1;2c')
+        # \e[?1;2c : Claims to be a vt100
+                # vt100 could mean...
+                __debug_p "vt100 Primary DA response."
                 case "$TERM2DA" in
-                  '\033[>19;'*c)
-                    __debug_p "vt340 or clone"
-                    ;;
-                  *)
-                    __debug_p "vt320 or clone"
-                    ;;
+                    '\033[>84;0;0c')
+                        __debug_p "Byobu terminal"
+                        _known_terminal "byobu"
+                        ;;
+                    '\033[>0;115;0c')
+        # \e[?1;2c : Claims to be a vt100
+                        # Cool Retro Term or Konsole
+                        # Verified on Debian 13
+                        __debug_p "Konsole (based)/Cool-Retro-Term"
+                        _known_terminal "konsole"
+                        ;;
+                    '\033[>1;95;0c')
+        # \e[?1;2c : Claims to be a vt100
+                        # NeXT or macOS Terminal.app
+                        __debug_p "Terminal.app"
+                        _known_terminal "terminal.app"
+                        ;;
+                    '\033[>0;95;0c')
+        # \e[?1;2c : Claims to be a vt100
+                        # iTerm2
+                        __debug_p "iTerm2.app (vt100 mode) up to ver 3.4.x"
+                        _known_terminal "iterm2"
+                        ;;
+                    '\033[>85;95;0c')
+        # \e[?1;2c : Claims to be a vt100
+                        __debug_p "rxvt-unicode-256color"
+                        _known_terminal "rxvt-unicode-256color"
+                        ;;
+                    '')
+                        __debug_p "VT100 Primary DA response."
+                        _known_terminal "vt100"
+                        ;;
+                    *)
+                        __debug_p "VT100 unknown soft terminal response."
+                        _known_terminal "vt100"
+                        ;;
                 esac
-                _known_terminal "vt320"
-            fi
-            ;;
+                ;;
+            '\033[?65;1;9c')
+        # \e[?65;1;9c : VT500 - VTE on Debian/Ubuntu libvte-2.91
+                # Would try to separate this more but
+                # xfce4-terminal and gnome-terminal both
+                # respond identically, and I've never found
+                # a non-VTE terminal with this primary DA.
+                __debug_p "vt500 - VTE response (Gnome, Xfce4)"
+                # Should respond to TERM_BG and COLOR
+                _known_terminal "vte"
+                ;;
+            '\033[?65;4;6;18;22c')
+        # \e[?65;4;6;18;22c : VT500 - Wezterm with Sixel specific
+                __debug_p "wezterm with sixel"
+                _known_terminal "wezterm"
+                ;;
+            '\033[?65;22;314;1;28;4;8c')
+                __debug_p "Contour"
+                _known_terminal "contour"
+                ;;
+            '\033[?65;'*';22;'*c)
+        # \e[?65;*c : VT500 Clone of Some Sort
+                __debug_p "vt500 series or clone with color"
+                _known_terminal "vt500c"
+                ;;
+            '\033[?65;'*c)
+        # \e[?65;*c : VT500 Clone of Some Sort
+                __debug_p "vt500 series or clone"
+                _known_terminal "vt500"
+                ;;
+            '\033[?64;1;2;4;6;17;18;21;22c')
+        # \e[?65;*c : VT420 -- iTerm2 v3.5 and up
+                # from macOS M1 iTerm2 version 3.5.2 (homebrew)
+                #       PRIMARY DA  : \e[?64;1;2;4;6;17;18;21;22c
+                #       SECONDARY DA: \e[>41;2500;0c
+                #       TERTIARY DA : \eP!I69547260\e\
+                # from macOS M1 iTerm2 version 3.5??
+                #       PRIMARY DA  : \e[?64;1;2;4;6;17;18;21;22c
+                #       SECONDARY DA: \e[>0;95;0c
+                #       TERTIARY DA : <null>
+                __debug_p "iTerm2 from v 3.5"
+                _known_terminal "iterm2"
+                ;;
+            '\033[?64;1;2;6;9;15;16;17;18;21;22;28c')
+        # \e[?64;1;2;6;9;15;16;17;18;21;22;28c : VT420 mode of xterm
+                __debug_p "xterm in vt420 mode"
+                _known_terminal "xterm420"
+                ;;
+            '\033[?64;1;9;15;21;22c')
+        # \e[?64;1;9;15;21;22c : VT420 mode of zutty
+                __debug_p "zutty in vt420 mode"
+                _known_terminal "zutty"
+                ;;
+            '\033[?64;'*c)
+        # \e[?64;*c : VT4XX Clone of Some Sort
+                __debug_p "vt420 series or clone"
+                _known_terminal "vt420"
+                ;;
+            '\033[?63;1;2;6;9;15;16;22;28c')
+        # \e[?63;1;2;6;9;15;16;22;28c : VT320 mode of xterm
+                __debug_p "xterm in vt320 mode"
+                _known_terminal "xterm320"
+                ;;
+            '\033[?63;1;2;4;6;9;15;16;22;28c')
+        # \e[?63;1;2;4;6;9;15;16;22;28c : VT340 mode of xterm
+                __debug_p "xterm in vt340 mode + sixel"
+                _known_terminal "xterm340"
+                ;;
+            '\033[?63;'*c)
+        # \e[?63;*c : VT3xx Clone of Some Sort
+                __debug_p "vt320 or Clone"
+                if [ 'xterm-256color' = "$TERM2DA" ]
+                then
+                    __debug_p "ConnectBot Android (vt340)"
+                    _known_terminal "connectbot"
+                else
+                    case "$TERM2DA" in
+                        '\033[>19;'*c)
+                            __debug_p "vt340 or clone"
+                            _known_terminal "vt340"
+                            ;;
+                        *)
+                            __debug_p "vt320 or clone"
+                            _known_terminal "vt320"
+                            ;;
+                    esac
+                fi
+                ;;
         '\033[?62;22c')
             # Ha, VT240 didn't have capability 22, though it DID have color
             __debug_p "vt240 (+ feature 22 [vt500 feature string])"
@@ -922,34 +934,27 @@ __q_getterm ()
             ;;
         '\033[?62;1;2;6;9;15;16;22;28c')
     # \e[?62;1;2;6;9;15;16;22;28c : VT220 mode of xterm
-            __debug_p "xterm in vt240 mode"
-            _known_terminal "xterm240"
+            __debug_p "xterm in vt220 mode"
+            _known_terminal "xterm220"
             ;;
         '\033[?62;1;2;4;6;8;9;15c')
             # Secondary ">1;123;0c"
             __debug_p "jvt220 (no terminfo)."
             _known_terminal "xterm240"
             ;;
-        '\033[?62;1;4c')
-    # \e[?62;1;4c : VT240 Clone...
-            if [ '\033[>0;115;0c' = "$TERM2DA" ]
-            then
-                # Very old entry, not recently validated
-                __debug_p "Konsole"
-                _known_terminal "konsole-old"
-            else
-                __debug_p "Unknown vt240 descendent"
-                _known_terminal "vt240"
-            fi
-            ;;
-        '\033[?62'*';4'*c)
+        '\033[?62'*';4'*'c')
     # \e[?62;*4*c : VT240 Clone...
-            __debug_p "VT240 Clone (sixel)"
+            __debug_p "VT240 Clone (4;sixel)"
             case "$TERM2DA" in
                 '\033[>0;115;0c')
                     # Very old entry, not recently validated
                     __debug_p "Konsole"
                     _known_terminal "konsole-old"
+                    ;;
+                '\033[>1;115;0c')
+                    # New KDE Konsole with Sixel Support
+                    __debug_p "KDE Konsole (based)"
+                    _known_terminal "konsole"
                     ;;
                 '\033[>0;95;0c')
                     # from macOS m4 iTerm2 version 3.4.23...
@@ -965,10 +970,22 @@ __q_getterm ()
                     _known_terminal "kitty"
                     ;;
                 *)
-                    __debug_p "Unknown vt220 descendent"
+                    __debug_p "Unknown vt240 descendent"
                     _known_terminal "vt240"
                     ;;
             esac
+            ;;
+        '\033[?62;1;4c')
+    # \e[?62;1;4c : VT240 Clone...
+            if [ '\033[>0;115;0c' = "$TERM2DA" ]
+            then
+                # Very old entry, not recently validated
+                __debug_p "Konsole"
+                _known_terminal "konsole-old"
+            else
+                __debug_p "Unknown vt240 descendent"
+                _known_terminal "vt240"
+            fi
             ;;
         '\033[?62;'*c)
     # \e[?62;*c : VT200 Clone...
@@ -985,7 +1002,7 @@ __q_getterm ()
                     ;;
                 *)
                     __debug_p "Secondary DA unrecognized"
-                    _known_terminal "vt240"
+                    _known_terminal "vt220"
                     ;;
             esac
             ;;
@@ -1000,7 +1017,7 @@ __q_getterm ()
             ;;
         '\033[?61;1;21;22c')
             # \e[?61;1;21;22c : VTE on Manjaro libvte-2.91 (older)
-            __debug_p "Non-DEC-DEC - VTE response (Gnome, Xfce4)"
+            __debug_p "Non-DEC VTE response (Gnome, Xfce4, pytxis)"
             _known_terminal vte
             ;;
         '\033[?61;6;7;22;23;24;28;32;42c')
@@ -1025,10 +1042,17 @@ __q_getterm ()
             # Microsoft Terminal on Windows 11 v 1.22.10731.0
             #TERM2DA='\033[>0;10;1c'; export TERM2DA; 
             #TERM3DA='\033P!|00000000\033\'; export TERM3DA; 
-            __debug_p "Microsoft Terminal (since 1.22.10731.0 - sixel)"
+            __debug_p "Microsoft Terminal (since 1.22.10731.0 - 4;sixel)"
             _known_terminal "msterminal"
             ;;
-      esac
+        '\033[?61;4;6;7;14;21;22;23;24;28;32;42;52c')
+            # Microsoft Terminal on Windows 11 v 1.22.12111.0
+            #TERM2DA='\033[>0;10;1c'; export TERM2DA; 
+            #TERM3DA='\033P!|00000000\033\'; export TERM3DA; 
+            __debug_p "Microsoft Terminal (since 1.22.12111.0)"
+            _known_terminal "msterminal"
+            ;;
+        esac
     fi
 
     if [ "1" = "$_TERMSET" ]
