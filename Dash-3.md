@@ -49,7 +49,7 @@ The example above (from that VT520 doc) says,
 > and has a unique ID number
 > of 010205.
 
-# References
+## References
 
 * `VT420 Programmer Reference Manual`
   publication `EK-VT420-RM.002` on page 234 (256 in PDF)
