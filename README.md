@@ -23,9 +23,10 @@ At least one action must be chosen
 
 | Opt | Desc |
 | --- | --- |
-| [-t](./Dash-t.md) | Ask for terminal identity/attributes. |
+| [-t](./Dash-t.md) | Ask for terminal identity. |
 | [-2](./Dash-2.md) | Ask for terminal version. |
 | [-3](./Dash-3.md) | Ask for terminal unique ID. |
+| [-e](./Dash-e.md) | Ask for terminal ENQ response. |
 | [-b](./Dash-b.md) | Ask terminal to respond with background color. |
 | -c \<nnn> | Ask terminal for the color represented by supplied number |
 | [-p \<str>](./Dash-p.md) | Send the terminal custom text |
