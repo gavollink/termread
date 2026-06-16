@@ -855,7 +855,7 @@ __q_getterm ()
                 _known_terminal "vt500"
                 ;;
             '\033[?64;1;2;4;6;17;18;21;22c')
-        # \e[?65;*c : VT420 -- iTerm2 v3.5 and up
+        # \e[?65;*c : VT420 -- iTerm2 v3.5 - v3.6.5
                 # from macOS M1 iTerm2 version 3.5.2 (homebrew)
                 #       PRIMARY DA  : \e[?64;1;2;4;6;17;18;21;22c
                 #       SECONDARY DA: \e[>41;2500;0c
@@ -865,6 +865,15 @@ __q_getterm ()
                 #       SECONDARY DA: \e[>0;95;0c
                 #       TERTIARY DA : <null>
                 __debug_p "iTerm2 from v 3.5"
+                _known_terminal "iterm2"
+                ;;
+            '\033[?64;1;2;4;6;17;18;21;22;52c')
+        # \e[?65;*c : VT420 -- iTerm2 v3.6.6 and up
+                # from macOS M1 iTerm2 version 3.6.6 (homebrew)
+                #       PRIMARY DA  : \e[?64;1;2;4;6;17;18;21;22;52c
+                #       SECONDARY DA: \e[>64;2500;0c
+                #       TERTIARY DA : \eP!|6954726D\e\
+                __debug_p "iTerm2 from v 3.6.6"
                 _known_terminal "iterm2"
                 ;;
             '\033[?64;1;2;6;9;15;16;17;18;21;22;28c')
@@ -912,21 +921,6 @@ __q_getterm ()
                     esac
                 fi
                 ;;
-        '\033[?62;22c')
-            # Ha, VT240 didn't have capability 22, though it DID have color
-            __debug_p "vt240 (+ feature 22 [vt500 feature string])"
-            case "$TERM2DA" in
-                '\033[>1;10;0c')
-                    # Ghostty (at least on macOS)
-                    __debug_p "Ghostty"
-                    _known_terminal "ghostty"
-                    ;;
-                *)
-                    __debug_p "Secondary DA unrecognized"
-                    _known_terminal "vt240"
-                    ;;
-            esac
-            ;;
         '\033[?62;1;2;4;6;9;15;16;22;28c')
     # \e[?62;1;2;4;6;9;15;16;22;28c : VT240 mode of xterm
             __debug_p "xterm in vt240 mode (sixel)"
@@ -986,6 +980,36 @@ __q_getterm ()
                 __debug_p "Unknown vt240 descendent"
                 _known_terminal "vt240"
             fi
+            ;;
+        '\033[?62;22;52c')
+            # Ha, VT240 didn't have capability 22, though it DID have color
+            __debug_p "vt240 (+ feature 22 [vt500 feature string]; 52)"
+            case "$TERM2DA" in
+                '\033[>1;10;0c')
+                    # Ghostty (at least on macOS)
+                    __debug_p "Ghostty"
+                    _known_terminal "ghostty"
+                    ;;
+                *)
+                    __debug_p "Secondary DA unrecognized"
+                    _known_terminal "vt240"
+                    ;;
+            esac
+            ;;
+        '\033[?62;22c')
+            # Ha, VT240 didn't have capability 22, though it DID have color
+            __debug_p "vt240 (+ feature 22 [vt500 feature string])"
+            case "$TERM2DA" in
+                '\033[>1;10;0c')
+                    # Ghostty (at least on macOS)
+                    __debug_p "Ghostty"
+                    _known_terminal "ghostty"
+                    ;;
+                *)
+                    __debug_p "Secondary DA unrecognized"
+                    _known_terminal "vt240"
+                    ;;
+            esac
             ;;
         '\033[?62;'*c)
     # \e[?62;*c : VT200 Clone...
