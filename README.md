@@ -12,7 +12,7 @@ have spent writing the code for this.*
 
 ## Code Home
 
-    Primary Development: https://gitlab.home.vollink.com/external/termread
+    Primary Development: https://git.home.vollink.com/external/termread
     Backup Location:     https://github.com/gavollink/termread
 
 ## Command Line (as of release 1.12)
