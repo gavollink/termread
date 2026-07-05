@@ -5,6 +5,14 @@ clues about why things work the way they work.  This is a summary
 of official DEC documentation for responses to the question,
 Who Are You?
 
+## META Search Keyword Matching
+
+- DA1
+- Device Attributes
+- Primary Device Attributes
+- Primary DA
+- Terminal Capabilities Report
+
 # VT50 Series (actual): DECID Responses
 
 The DECID Sequence, as described in the VT5x and VT55 manuals
@@ -35,6 +43,11 @@ are as follows:
 
 # VT100 Series: Device Attributes and DECID Responses
 
+    > NOTE: No (xterm compatible) should actually respond as a VT102,
+    but many do anyway.  At least VT100/VT132 allow an option list, BUT
+    the VT1xx series options are NOT compatible with the VT200 and later
+    which, because color, every current soft terminal actually is.
+
 | Terminal | Response        |
 |----------|-----------------|
 | VT100    | `\033[?1;<Ps>c` |
@@ -58,10 +71,11 @@ The \<Ps> is descibed as
 | 15     | VT|XX-AC and Graphics Processor |
 
     > NOTE: A true VT100 with NO OPTIONS would respond
-    with `\033[?1;0c.
+    with `\033[?1;0c. (`EK-VT100-UG-002`)
 
     > NOTE: The LA120, a Teleprinter product from DEC
-    responds to *Device Attributes* with `\033[2c`.
+    responds to *Device Attributes* with `\033[?2c`.
+    (`EK-LA120-UG-003`)
 
 # VT200 Series: Device Attributes
 
@@ -84,8 +98,9 @@ feature codes in ascending order, separated by semicolons ` ; `.
 | 8      | UDK (User Defined Keys) |
 | 9      | National Replacement Character Set |
 
-* The VT220 introduces 8-Bit native for the first time
-* Option 9 is ONLY mentioned in the VT240 Programmer Reference Manual
+- The VT220 introduces 8-Bit native for the first time
+- Option 9 is ONLY mentioned in the VT240 Programmer Reference Manual
+  ('EK-VT240-RM-002`)
 
 # VT300 Series: Device Attributes
 
@@ -140,10 +155,16 @@ feature codes in ascending order, separated by semicolons ` ; `.
 
 ## VT500 Options
 
+Source: VT510 Video Terminal Programmer Information `EK-VT510-RM`
+
+Also checked against the VT520/525 manual `EK-VT520-RM` (which is a subset
+of the VT510 attributes)
+
 | Number | Feature Desciption  |
 |--------| ------------------- |
 | 1       | 132 columns |
 | 2       | Printer port |
+| 4       | Sixel extension |
 | 6       | Selective erase [^nr] |
 | 7       | Soft character set (DRCS) |
 | 8       | User-defined keys (UDKs) [^nr] |
@@ -153,7 +174,7 @@ feature codes in ascending order, separated by semicolons ` ; `.
 | 18      | Windowing capability |
 | 19      | Sessions |
 | 21      | Horizontal scrolling |
-| 22      | Color |
+| 22      | ANSI (Indexed) Color |
 | 23      | Greek |
 | 24      | Turkish |
 | 42      | ISO Latin-2 |
@@ -162,6 +183,22 @@ feature codes in ascending order, separated by semicolons ` ; `.
 | 46      | ASCII terminal emulation |
 
 [^nr] Option exists, but is not reported.
+
+## Non-Official, Software Terminal Capabilities
+
+| 28      | Rectangluar Editing [xterm, MS term] |
+| 32      | Text macros [MS term]
+| 52      | Can interact with system clipboard [MS term] |
+| 314     | Screen Capture [Contour-Terminal] |
+
+- xterm release note for Patch #348,
+  "add 28 rectangular editing to the primary response"
+- github user microsoft, project terminal (28, 32, 52):
+  `src/terminal/adapter/adaptDispatch.cpp`,
+  function `AdaptDispatch::DeviceAttributes()`
+  - 52 is ALSO used by iterm2, ghostty, but I couldn't find definitive docs
+- github user contour-terminal, project contour:
+  `metainfo.xml`: "Adds VT sequence to capture the current screen buffer"...
 
 # References
 
