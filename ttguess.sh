@@ -286,6 +286,9 @@ _known_terminal()
             # for vt500 series, but not before.
             __set_term_info_x "0:256:0" vt420 vt420-basic xterm-256color
             ;;
+        kermit3)
+            __set_term_info_x "0:256:0" vt320-k311
+            ;;
         xterm340)
             __set_term_info_x "0:256:1:semi" xterm-vt340 xterm-256color
             ;;
@@ -939,6 +942,12 @@ __q_getterm ()
     # \e[?62;1;2;6;9;15;16;22;28c : VT220 mode of xterm
             __debug_p "xterm in vt220 mode"
             _known_terminal "xterm220"
+            ;;
+        '\033[?62;1;2;6;8;9;15;44c')
+            # Secondary ">24;0;0c"
+            # Tertiary "P!|--------\033\\'
+            __debug_p "Kermit 95 (3.0 Beta 7)"
+            _known_terminal "kermit3"
             ;;
         '\033[?62;1;2;4;6;8;9;15c')
             # Secondary ">1;123;0c"
