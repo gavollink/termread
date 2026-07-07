@@ -906,6 +906,7 @@ __q_getterm ()
                 ;;
             '\033[?63;1;2;4;6;9;15;16;22;28c')
         # \e[?63;1;2;4;6;9;15;16;22;28c : VT340 mode of xterm
+        # Verified still true at patch 398
                 __debug_p "xterm in vt340 mode + sixel"
                 _known_terminal "xterm340"
                 ;;
