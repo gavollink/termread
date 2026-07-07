@@ -163,15 +163,43 @@ expectations of a modern user.
 
 August 1978, the VT100 was brought to market.
 The VT100 was the first product to use the (not yet published)
-`ANSI X3.64-1979` Control Codes standard.
-This series proved to be very successful and created a HUGE number
+`ANSI X3.64-1979` Control Codes standard...
+
+    ***Side Note***
+
+    There is a foot-note here:
+    https://vt100.net/shuford/terminal/dec.html#Footnotes . 
+    It claims that Heath Company (as in Heathkit) was
+    first to market with an X3.64 (ANSI Escape sequences)
+    video terminal.  However, I've found zero evidence to
+    support this claim.  
+
+    I went so far to find the manual for the Heathkit H9,
+    from 1977, and it makes no mention of X3.64,
+    and explicitly describes blanking the screen by scrolling
+    until it is blank.  The H-19 did, but best I can find, it
+    came out in 1979, just before they were bought out by
+    Zenith, and most of these were sold under the Z-19 model.
+
+   [REMark 1979, Issue 6 Index](https://heathkit.garlanger.com/periodicals/REMark/1979/)
+
+    REMark was published by the Heath User's Group, and the
+    second quarter issue has an article titled, H19 Sneak Preview.
+
+    If someone finds a source to suggest that the H-19 really
+    did come out earlier than I've found, even an article from
+    back in the day talking about Heathkit beating DEC on this,
+    I'd love to hear about it.
+
+The VT100 series proved to be very successful and created a HUGE number
 of clones, making the VT100 the most emulated terminal in history.
 On any modern system, most base capabilities of a VT100 are taken for
 granted.
 
-In this series, the DECID command is still supported, but is deprecated
-in favor of the `Device Attributes` (DA) command: `\033[c`, where `\033[`
-is the ANSI standard control start indicator.
+In this series, the VT5x style DECID command is still supported,
+but is deprecated in favor of the `Device Attributes` (DA)
+command: `\033[c`, where `\033[` is the ANSI standard
+control start indicator (CSI).
 
 Don't be fooled by the higher numbers, the VT101 and VT102 are reduced
 cost and reduced feature versions of the VT100.

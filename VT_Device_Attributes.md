@@ -1,19 +1,26 @@
-# Introduction
+# Device Attributes / DA1 / Primary Device Attributes
 
-I have read a LOT of manuals for Digital Equipment Corporation for
-clues about why things work the way they work.  This is a summary
-of official DEC documentation for responses to the question,
-Who Are You?
+## Introduction
 
-## META Search Keyword Matching
+Most simply, Device Attributes is a way for a running program to ask a
+terminal what it is capable of displaying or doing.  It started out
+much simpler than this, but that is the start.
 
-- DA1
-- Device Attributes
-- Primary Device Attributes
-- Primary DA
-- Terminal Capabilities Report
+## The DEC VT05
 
-# VT50 Series (actual): DECID Responses
+There was no query to a DEC VT05 that would give any clue as to what
+device was at the end of the line.
+
+According to a reference to the VT05 from the PDP-8/e documentation,
+the VT05 is "fully compatible with the Teletype Model 33", however,
+the VT05 did not have a programmable response to the `ENQ` key (verified
+from the Reference Manual).
+
+The VT05 would safely ignore the `ENQ` character, just like a
+Teletype Model 33 fresh out of the box with its response string
+left unset.
+
+## VT50 Series (actual): DECID Responses
 
 The DECID Sequence, as described in the VT5x and VT55 manuals
 are as follows:
@@ -28,11 +35,15 @@ are as follows:
 | VT55     |  `\033/C` | VT55 response (s1) |
 | VT55E    |  `\033/E` | DECgraphic Scope VT55 | 24 Lines x 80 Cols |
 
-# VT100 and later (in VT52 compatible mode): DECID Response
+### VT52 Compatibility Mode in Later Terminals
 
-| Terminal        | Reponse  | Version Info   | NOTES |
-| --------------- |----------|----------------|-------|
-| VT100 and newer | `\033/Z` | Emulation Mode | 24 Lines x 80 Cols |
+VT50 was never emulated, as the difference between them (mostly) was that
+the 52 was the first to track and display the English 26 lowercase AND
+uppercase letters.  Nobody was asking to emulate uppercase only.
+
+| Terminal        | Reponse  | Version Info        | NOTES |
+| --------------- |----------|---------------------|-------|
+| VT100 and newer | `\033/Z` | VT52 Emulation Mode | 24 Lines x 80 Cols |
 
     > NOTE: `xterm` in VT52 emulation mode also responds with this
     same string.  This is correct, to mean "not a real VT52, but a
@@ -41,18 +52,19 @@ are as follows:
     terminal, which is misleading and is one of the things that led
     me to read every DEC Video Terminal Manual I could find.
 
-# VT100 Series: Device Attributes and DECID Responses
+## VT100 Series: Device Attributes and DECID Responses
 
     > NOTE: No (xterm compatible) should actually respond as a VT102,
     but many do anyway.  At least VT100/VT132 allow an option list, BUT
     the VT1xx series options are NOT compatible with the VT200 and later
-    which, because color, every current soft terminal actually is.
+    which, because of 8-bit compatability and color, every current
+    soft terminal actually is, even if their featureset is incomplete.
 
-| Terminal | Response        |
-|----------|-----------------|
-| VT100    | `\033[?1;<Ps>c` |
-| VT132    | `\033[?4;<Ps>c` |
-| VT102    | `\033[?6c`      |
+| Terminal | Response        | Notes |
+|----------|-----------------|-------|
+| VT100    | `\033[?1;<Ps>c` | First full feature terminal |
+| VT131    | `\033[?4;<Ps>c` | Block Mode Varient |
+| VT102    | `\033[?6c`      | Minimal Feature Set (cheap version) |
 
 ## VT100 Options \<Ps>
 
@@ -186,10 +198,12 @@ of the VT510 attributes)
 
 ## Non-Official, Software Terminal Capabilities
 
-| 28      | Rectangluar Editing [xterm, MS term] |
-| 32      | Text macros [MS term]
-| 52      | Can interact with system clipboard [MS term] |
-| 314     | Screen Capture [Contour-Terminal] |
+| Number | Feature Desciption  |
+|--------| ------------------- |
+| 28     | Rectangluar Editing [xterm, MS term] |
+| 32     | Text macros [MS term] |
+| 52     | Can interact with system clipboard [MS term] |
+| 314    | Screen Capture [Contour-Terminal] |
 
 - xterm release note for Patch #348,
   "add 28 rectangular editing to the primary response"
@@ -200,7 +214,26 @@ of the VT510 attributes)
 - github user contour-terminal, project contour:
   `metainfo.xml`: "Adds VT sequence to capture the current screen buffer"...
 
-# References
+## META Search Keyword Matching
+
+- DA1
+- Device Attributes
+- Primary Device Attributes
+- Primary DA
+- Terminal Capabilities Report
+
+## References
+
+**VT05**
+
+- https://www.vt100.net/dec/vt05
+
+One source of the above is from the PDP-8/e Small Computer Manual,
+Ch-7, Pg 52.  Only a FAX (tiff) scan is available.
+
+- http://highgate.comm.sfu.ca/pdp8/8ehandbook/8ech7-p1.tif
+
+***NOTE***: The source says the VT05 is fully compatible with the Teletype 33, which implies that receiving an ENQ will not harm the VT functions, but does NOT actually prove that it would have any response.
 
 **VT5x DECID**
 
@@ -208,7 +241,7 @@ of the VT510 attributes)
 `DECscope User's Manual`, publication `EK-VT5X-OP-001` (March 1977)
 on page 22 (26 in PDF).
 
-    * https://vt100.net/dec/ek-vt5x-op-001.pdf
+    - https://vt100.net/dec/ek-vt5x-op-001.pdf
 
 * VT55 response found in the
 `VT55-E, F, H, J DECgraphic Scope Users' Manual`,
