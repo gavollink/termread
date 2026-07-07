@@ -34,8 +34,26 @@ depth explanation.
 | VT500  | 44     | PCTerm                           |
 | VT500  | 45     | Soft key mapping                 |
 | VT500  | 46     | ASCII terminal emulation         |
-| xterm  | 28     | Rectangluar Editing              |
+| ??     | 28     | Rectangluar Editing              |
 | ??     | 32     | Text macros                      |
 | ??     | 52     | Can interact with system clipboard |
 | Contour | 314   | Screen Capture                   |
+
+## Ever Incomplete List
+
+More and more, terminals are catching on that these number are fluid,
+and really, there aren't that many unique terminal programs out there
+(so many use a common library, like Konsole or VTE), so
+add a number, and someone else is likely to pick it up too.
+
+Anyway, I have heard tell of several other numbers, BUT, never with any
+pointers to exactly what terminal actually uses it, and I'm very
+wary of the circular reference problem on the Internet.
+
+You know when some guy on Reddit says he saw it on vt100.net that has
+a footnote suggesting that terminal.computer said it, and when pressed,
+they think they saw it on Reddit.
+
+Anyway, feel free to reach out if you have a pointer to a number I
+don't have with an actual reference, even if it is in source code.
 
