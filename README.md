@@ -23,13 +23,13 @@ At least one action must be chosen
 
 | Opt | Desc |
 | --- | --- |
-| [-t](./Dash-t.md) | Ask for terminal identity. |
-| [-2](./Dash-2.md) | Ask for terminal version. |
-| [-3](./Dash-3.md) | Ask for terminal unique ID. |
-| [-e](./Dash-e.md) | Ask for terminal ENQ response. |
-| [-b](./Dash-b.md) | Ask terminal to respond with background color. |
+| [-t](docs/Dash-t.md) | Ask for terminal identity. |
+| [-2](docs/Dash-2.md) | Ask for terminal version. |
+| [-3](docs/Dash-3.md) | Ask for terminal unique ID. |
+| [-e](docs/Dash-e.md) | Ask for terminal ENQ response. |
+| [-b](docs/Dash-b.md) | Ask terminal to respond with background color. |
 | -c \<nnn> | Ask terminal for the color represented by supplied number |
-| [-p \<str>](./Dash-p.md) | Send the terminal custom text |
+| [-p \<str>](docs/Dash-p.md) | Send the terminal custom text |
 
 ### Options
 
@@ -242,8 +242,16 @@ $ ./truecolor --help
 $ ./truecolor -c xff8210 -s TEST OUTPUT
 ```
 
-# Just because
+## Related Docs and Research
 
-Check out the [Teleprinter](./TP_History.md)
-and [VT History](./VT_History.md) pages.
+These are pages I've written up specifically around researching this very
+project.  I said this above:
+
+    I have spent more time writing documentation about
+    VT terminals than I have spent writing the code for this.
+
+- [Teleprinter History](docs/TP_History.md)
+- [VT History](docs/VT_History.md)
+- [Device Attributes](docs/VT_Device_Attributes.md)
+- [Device Attributes Feature Master List](docs/PrimaryDeviceAttributes_Master.md)
 
