@@ -3,9 +3,11 @@
 Request Terminal ID (primary Device Attributes)
 
 This was introduced with the VT100 series.
-Every terminal emulator I've tested responds to this.
+Every terminal emulator I've tested responds to this,
+excepting when `xterm` is started in VT52 compatability
+mode.
 
-Sends two control strings to the terminal, and recieves back identifying
+Sends a control string to the terminal, and recieves back identifying
 information.
 
 Returns whatever is returned (octal escaping control characters) in a
@@ -26,24 +28,15 @@ to *DECID* and not the much more common *Primary DA*.
 For these TERM entries (hard-coded at compile time), TermRead will
 send *DECID*, and wait for a response (see --delay).
 
-For all TERM entries (hard-coded at compile time) that claim to
-respond to *Primary DA*, TermRead will send both *Primary DA*
-and `ENQ`.
-
-For any unknown term entry, TermRead will print an error to stderr.
+For any term entry that is unknown, or know to only respond to `DECID`,
+[see -e](./Dash-e.md), TermRead will print an error to stderr.
 The `!` argument can be used to force *Primary DA* capable treatment.
-
-My own testing has shown that it is harmless to send *Primary DA*
-and *ENQ* in one string.  Doing this has the benefit of sniffing out
-PuTTY (which has many quirks of its own), and `rxvt` which will
-essentially respond twice.
 
 ## Sends
 
-| DEC Name   | Sequence     | As shown in docs |
-| :-----     |  ----        | -----            |
-| DECID      |  `\033Z`     | ESC Z            |
-| Primary DA | `\033[c\005` | CSI c ENQ        |
+| DEC Name   | Sequence | As shown in docs |
+| :-----     |  ----    | -----            |
+| Primary DA | `\033[c` | CSI c        |
 
 ## Returns
 
@@ -51,17 +44,16 @@ essentially respond twice.
 TERMID='<sequence>'; export TERMID; 
 ```
 
-Where sequence MAY be on of:
+Where sequence could look like one of these:
 
 | Sequence                        | Observed Terminal             |
 |:--------------------------------|:------------------------------|
-| `\033/Z`                        | xterm in vt52 emulation mode  |
-| `\033[?1;2c`                    | Apple Terminal.app (Catalina) |
-| `\033[?1;0c`                    | Microsoft Terminal (store)    |
+|                                 | xterm in vt52 emulation mode  |
+| `\033[?1;2c`                    | Apple Terminal.app            |
 | `\033[?65;1;9c`                 | Gnome Terminal                |
 | `\033[?64;1;2;6;9;15;18;21;22c` | xterm in vt420 default mode   |
 | `\033[?1;2c\033[?1;2c`          | rxvt (Linux)                  |
-| `\033[?6cPuTTY`                 | PuTTY (Windows)               |
+| `\033[?6c`                      | PuTTY (Windows)               |
 | `\033[?6c`                      | xvt (Linux)                   |
 | `\033[?6c`                      | Linux console (Ubuntu 20.02)  |
 
@@ -71,6 +63,15 @@ An `xterm` can be complied to emulate other options and other terminal
 types.
 
 # Returned Code Meanings
+
+The deep documentation for this has been moved to
+[Primary Device Attributes](./VT_Device_Attributes.md).
+
+For well behaved terminals that respond as a VT200 or later,
+return strings with `?61`, `?62;`, `?63`, `?64` or `?65`, this is
+a abbreviated, complete page of capabilities I've actually observed:
+
+[Device Attribute Master](./PrimaryDeviceAttributes_Master.md)
 
 ## VT Terminals
 
@@ -83,8 +84,6 @@ never to *primary DA* sequence, the return code starts with these two bytes
 ```
     \033[       # ESC + [
 ```
-
-See [Observed Output](./Observed_Output.md) for more known return codes.
 
 ## VT100 through VT125 Terminals
 

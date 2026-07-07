@@ -18,7 +18,8 @@ from the Reference Manual).
 
 The VT05 would safely ignore the `ENQ` character, just like a
 Teletype Model 33 fresh out of the box with its response string
-left unset.
+left unset.  Interestingly, it would ignore `ENQ` *faster* than an
+actual unmodified `TTY3 3`.
 
 ## VT50 Series (actual): DECID Responses
 
@@ -45,7 +46,7 @@ uppercase letters.  Nobody was asking to emulate uppercase only.
 | --------------- |----------|---------------------|-------|
 | VT100 and newer | `\033/Z` | VT52 Emulation Mode | 24 Lines x 80 Cols |
 
-    > NOTE: `xterm` in VT52 emulation mode also responds with this
+    NOTE: `xterm` in VT52 emulation mode also responds with this
     same string.  This is correct, to mean "not a real VT52, but a
     later device in compatability mode".  There are places where this
     response is claimed as being the actual response for a VT52
@@ -54,7 +55,7 @@ uppercase letters.  Nobody was asking to emulate uppercase only.
 
 ## VT100 Series: Device Attributes and DECID Responses
 
-    > NOTE: No (xterm compatible) should actually respond as a VT102,
+    NOTE: No (xterm compatible) should actually respond as a VT1xx,
     but many do anyway.  At least VT100/VT132 allow an option list, BUT
     the VT1xx series options are NOT compatible with the VT200 and later
     which, because of 8-bit compatability and color, every current
@@ -196,18 +197,108 @@ of the VT510 attributes)
 
 [^nr] Option exists, but is not reported.
 
+# VT1000
+
+The VT1000 was an X11 terminal, specifically meant to
+run an X11R3 desktop session from a host server.
+It could also still act as a character based terminal.
+The VT1000, itself, did not have a unique `?6x` number,
+but instead could emulate other DEC terminals.
+
+This seems to be the only official DEC use of the `?61`
+to refer to VT100 compatible using VT200+ capabilities.
+
+| Number  | Feature Desciption  |
+|---------|---------------------|
+| 1       | 132 columns                     |
+| 2       | Printer port                    |
+| 3       | ReGIS graphics                  |
+| 4       | Sixel graphics                  |
+| 6       | Selective erase [^nr]           |
+| 7       | Soft character set (DRCS)       |
+| 8       | User-defined keys (UDKs) [^nr]  |
+| 9       | National replacement character sets (NRC) |
+| 11      | 25th Status Line                |
+| 14      | 8-bit architecture              |
+| 15      | DEC technical set               |
+| 16      | ReGIS locator                   |
+| 17      | Terminal state reports          |
+| 29      | ANSI text locator               |
+| 39      | page memory extension           |
+
+
+## DEC Internal Standards Document, 1992
+
+Level, here, suggests that these features should not be available
+for terminals below, or above the described range.  **NOTE**
+Exceptions to this are marked `(imp)` for implied for compatability
+for terminals reporting as above the range.
+
+Note that 39 - 46, used in the VT5xx and VT1000 series are not
+reflected in the 1992 standards doc.
+
+Note that 10 and 11 are overloaded, having been used as Greek and
+Turkish for country specific models of the VT2xx and VT3xx series.
+
+| Number  | Level   | Feature Desciption                         |
+|---------|---------|--------------------------------------------|
+| 1       | 61 - 64 | 132 columns                                |
+| 2       | 61 - 64 | Printer port                               |
+| 3       | 61 - 64 | ReGIS graphics                             |
+| 4       | 61 - 64 | Sixel graphics                             |
+| 5       | 61 - 63 | Katakana                                   |
+| 6       | 62 - 64 | Selective erase                            |
+| 7       | 62 - 64 | Dynamically Redefinalble Character Sets (DRCS) |
+| 8       | 62 - 64 | User-defined keys (UDKs)                   |
+| 9       | 61 - 64 | National replacement character sets (NRCS) |
+| 10      | 61 - 63 | Kanji                                      |
+| 11      | 62      | Status Display `(imp)`                     |
+| 12      | 61 - 63 | Serbo-Croatian                             |
+| 13      | 61 - 63 | Block Mode                                 |
+| 14      | 62      | 8-bit interface architecture `(imp)`       |
+| 15      | 62 - 64 | Technical Character Set                    |
+| 16      | 61 - 64 | Locator Port                               |
+| 17      | 62      | Terminal State Interrogation `(imp)`       |
+| 18      | 62 - 64 | Windowing                                  |
+| 19      | 62 - 64 | Multiple Sessions (TD/SMP)                 |
+| 20      | 61 - 64 | APL                                        |
+| 21      | 62 - 64 | Horizontal Scrolling                       |
+| 22      | 62 - 64 | Color Text                                 |
+| 23      | 61 - 63 | Greek                                      |
+| 24      | 61 - 63 | Turkish                                    |
+| 25      | 62 - 63 | Arabic Bilingual Mode 1                    |
+| 26      | 62 - 63 | Arabic Bilingual Mode 2                    |
+| 27      | 62 - 63 | Arabic Bilingual Mode 3                    |
+| 28      | 62 - 63 | Rectangular Editing                        |
+| 29      | 62 - 64 | Text Locator                               |
+| 30      | 62 - 63 | Hanzi                                      |
+| 31      |         |         (reserved?)                        |
+| 32      | 62 - 64 | Text Macros                                |
+| 33      | 62 - 63 | Hangul and Hanja                           |
+| 34      | 62 - 63 | Icelandic                                  |
+| 35      | 62 - 63 | Arabic Bilingual with Text Controls        |
+| 36      | 62 - 63 | Arabic Bilingual with no Text Controls     |
+| 37      | 62 - 63 | Thai                                       |
+| 38      | 62 - 63 | Character Outlining                        |
+
+
+## Non-Official, Software Terminal ID
+
+```
+\033[?61
+```
+
+Does not claim to be any DEC VT, but shares the VT200 and
+later capability list.
+
 ## Non-Official, Software Terminal Capabilities
 
 | Number | Feature Desciption  |
 |--------| ------------------- |
-| 28     | Rectangluar Editing [xterm, MS term] |
-| 32     | Text macros [MS term] |
 | 52     | Can interact with system clipboard [MS term] |
 | 314    | Screen Capture [Contour-Terminal] |
 
-- xterm release note for Patch #348,
-  "add 28 rectangular editing to the primary response"
-- github user microsoft, project terminal (28, 32, 52):
+- github user microsoft, project terminal (52):
   `src/terminal/adapter/adaptDispatch.cpp`,
   function `AdaptDispatch::DeviceAttributes()`
   - 52 is ALSO used by iterm2, ghostty, but I couldn't find definitive docs
@@ -226,10 +317,12 @@ of the VT510 attributes)
 
 **VT05**
 
-- https://www.vt100.net/dec/vt05
+- `VT05 alphanumeric display terminal reference manual`
+  publication `DEC-00-H4AC-D`
+  - https://www.vt100.net/dec/vt05 (converted to HTML)
 
-One source of the above is from the PDP-8/e Small Computer Manual,
-Ch-7, Pg 52.  Only a FAX (tiff) scan is available.
+Another source of information on the VT05 is from the PDP-8/e
+Small Computer Manual, Ch-7, Pg 52.  Only a FAX (tiff) scan is available.
 
 - http://highgate.comm.sfu.ca/pdp8/8ehandbook/8ech7-p1.tif
 
@@ -237,79 +330,80 @@ Ch-7, Pg 52.  Only a FAX (tiff) scan is available.
 
 **VT5x DECID**
 
-* VT50 -> VT52 responses found in
-`DECscope User's Manual`, publication `EK-VT5X-OP-001` (March 1977)
-on page 22 (26 in PDF).
+- VT50 -> VT52 responses found in
+  `DECscope User's Manual`, publication `EK-VT5X-OP-001` (March 1977)
+  on page 22 (26 in PDF).
+  - https://vt100.net/dec/ek-vt5x-op-001.pdf
 
-    - https://vt100.net/dec/ek-vt5x-op-001.pdf
-
-* VT55 response found in the
-`VT55-E, F, H, J DECgraphic Scope Users' Manual`,
-publication `EK-VT55E-TM-001` (1976) on page 5-19 (65 in PDF)
-
-    * https://vt100.net/dec/ek-vt55e-tm-001.pdf
+- VT55 response found in the
+  `VT55-E, F, H, J DECgraphic Scope Users' Manual`,
+  publication `EK-VT55E-TM-001` (1976) on page 5-19 (65 in PDF)
+  - https://vt100.net/dec/ek-vt55e-tm-001.pdf
 
 **VT100 in VT52 Compatible Mode**
 
-* `VT100 Series Technical Manual` (which covers VT100 through VT135),
-publication `EK-VT100-TM-002` (Sept 1980) on page A-16 (308 in PDF).
-
-    * https://vt100.net/dec/ek-vt100-tm-002.pdf
+- `VT100 Series Technical Manual` (which covers VT100 through VT135),
+   publication `EK-VT100-TM-002` (Sept 1980) on page A-16 (308 in PDF).
+  - https://vt100.net/dec/ek-vt100-tm-002.pdf
 
 **VT100 Series: Device Attributes and DECID Responses**
 
-* `VT100 Series Technical Manual` (which covers VT100, VT101 and
-    VT135), publication `EK-VT100-TM-002` (Sept 1980) on page
-    A-18 (310 in PDF)
+- `VT100 Series Technical Manual` (which covers VT100, VT101 and
+  VT135), publication `EK-VT100-TM-002` (Sept 1980) on page
+  A-18 (310 in PDF)
+  - https://vt100.net/dec/ek-vt100-tm-002.pdf
 
-    * https://vt100.net/dec/ek-vt100-tm-002.pdf
+- `VT1XX-AC User Guide` (covers the serial printer interface option
+  for the VT100, VT101 and VT132) `EK-VT1AC-UG-002` (Oct 1980) on
+  page 48 (58 in PDF)
+  - https://vt100.net/dec/ek-vt1ac-ug-002.pdf
 
-* `VT1XX-AC User Guide` (covers the serial printer interface option
-    for the VT100, VT101 and VT132) `EK-VT1AC-UG-002` (Oct 1980) on
-    page 48 (58 in PDF)
+- `VT102 Video Terminal User Guide` (specific to the VT102)
+  publication `EK-VT102-UG-003` (June 1982) on
+  page 202 (236 in PDF)
+  - https://archive.org/details/h42_HP_VT102_Video_Terminal_User_Guide
 
-    * https://vt100.net/dec/ek-vt1ac-ug-002.pdf
-
-* `VT102 Video Terminal User Guide` (specific to the VT102)
-    publication `EK-VT102-UG-003` (June 1982) on
-    page 202 (236 in PDF)
-
-    * https://archive.org/details/h42_HP_VT102_Video_Terminal_User_Guide
-
-* `LA120 Technical Manual`
-publication `EK-LA120-TM-001` on page 3-5 (49 in PDF)
-
-* https://vt100.net/dec/ek-la120-tm-001.pdf
+- `LA120 Technical Manual`
+  publication `EK-LA120-TM-001` on page 3-5 (49 in PDF)
+  - https://vt100.net/dec/ek-la120-tm-001.pdf
 
 **VT200 Series: Device Attributes**
 
-* `VT220 Programmer Reference Manual` publication `VT220-RM-001` on
-    page 4-48 (88 in PDF)
-
-    * https://www.vt100.net/dec/ek-vt220-rm-001.pdf
+- `VT220 Programmer Reference Manual` publication `VT220-RM-001` on
+  page 4-48 (88 in PDF)
+  - https://www.vt100.net/dec/ek-vt220-rm-001.pdf
 
 * `VT240 Programmer Reference Manual` publication `VT240-RM-002` on
-    page 101 (120 in PDF)
-
-    * https://www.vt100.net/dec/ek-vt220-rm-001.pdf
+  page 101 (120 in PDF)
+  - https://www.vt100.net/dec/ek-vt220-rm-001.pdf
 
 **VT300 Series: Device Attributes**
 
-* `VT320/VT340 Programmer Reference Manual, Vol 1: Text Programming`
+- `VT320/VT340 Programmer Reference Manual, Vol 1: Text Programming`
    publication `EK-VT3XX-TP-002` on page 198 (212 in PDF)
-
-    * https://vt100.net/dec/ek-vt3xx-tp-002.pdf
+   - https://vt100.net/dec/ek-vt3xx-tp-002.pdf
 
 **VT400 Series: Device Attributes**
 
-* `VT420 Programmer Reference Manual`
+- `VT420 Programmer Reference Manual`
   publication `EK-VT420-RM.002` on page 230 (252 in PDF)
-
-    * https://manx-docs.org/collections/mds-199909/cd3/term/vt420rm2.pdf
+  - https://manx-docs.org/collections/mds-199909/cd3/term/vt420rm2.pdf
 
 **VT500 Series: Device Attributes**
 
-* `VT520/VT525 Programmer Informaion` publication `EK-VT520-RM.A01`
+- `VT520/VT525 Programmer Information` publication `EK-VT520-RM.A01`
   on page 5-10 (164 in PDF)
+  - https://vt100.net/mirror/mds-199909/cd3/term/vt520rma.pdf
 
-    * https://vt100.net/mirror/mds-199909/cd3/term/vt520rma.pdf
+**VT1000 Series: Device Attributes**
+
+- `Installing and Using the VT1000 Video Terminal`
+  publication `EK-VT1000-UG-002` on page 180-181 (190 in PDF)
+  - https://vt100.net/mirror/mds-199909/cd3/term/v1000ug2.pdf
+
+**DEC Internal Video Systems Reference Manual (1991)**
+
+- `DEC STD 070 Video System Referenec Manual`
+  publication `A-MN-ELSM070-00-0000 Rev H, 03-Dec-1991`
+  on page 04-19 (223 in PDF)
+  - https://archive.org/details/bitsavers_decstandar0VideoSystemsReferenceManualDec91_74264381
