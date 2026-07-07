@@ -1,5 +1,14 @@
 # Observed Outputs
 
+# 2026 UPDATE:
+
+This was written many years ago, and almost everything has improved quite
+a bit since this was written.  For more recent
+observed outputs, see the source code for [ttguess](ttguess.sh).
+
+I regularly use a lot of different emulators on Win, Mac and Linux, and if
+ttguess stops working, I know it very quickly, and update that script.
+
 # Linux
 
 | Terminal | -t | -2 | -bg | -c1 | Version Info |
@@ -11,25 +20,21 @@
 | console | `\033[?6c` | nil | ? | ? | Ubuntu 20.02  |
 | xterm -ti vt52  | `\033/Z` | NO | NO | NO | XTerm(372) VT52 Emulation |
 
-NOTE: xterm in vt52 mode responds with the string of a vt05 which must have
-been a mistake.
-
 # macOS
 
 | Terminal | -t | -2 | -bg | -c1 | Version Info |
 |----------|----|----|-----|-----|--------------|
 | Terminal.app | `\033[?1;2c` | `\033[>1;95;0c` | YES | YES | Catalina 10.x |
-| Terminal.app | `\033[?1;2c` | `\033[>1;95;0c` | YES | YES | Big Sur 11.x |
-| Terminal.app | `\033[?1;2c` | `\033[>1;95;0c` | YES | YES | Ventura 13.x |
+| Terminal.app | `\033[?1;2c` | `\033[>1;95;0c` | YES | YES | ...          |
+| Terminal.app | `\033[?1;2c` | `\033[>1;95;0c` | YES | YES | Tahoe 26.x |
 | KiTTY.app    | `\033[?62;c` | `\033[>1;4000;30c` | YES | YES | 0.30.0 |
 | iTerm2.app   | `\033[?62;4c` | `\033[>0;95;0c` | YES | YES | 3.4.20 |
 
 # Windows
 
-It is disappointing that there is no difference in responses between
-the default Windows Console Host and Windows Terminal as
-Windows Terminal can display Emoji and has a larger set
-of capabilities.
+NOTE 2026: Microsoft Terminal is the most improved of all the 
+terminals I regularly use.  There are several ttguess updates as this has
+been updated over the years.
 
 | Terminal             |  -t             |  -2           | -bg  |  -c1 | Version Info |
 | ----------           | ----            | ----          |----- | -----|--------------|
@@ -47,6 +52,7 @@ of capabilities.
 | vt52     | `\033K` | nil | nil | nil | DECscope vt52 Ax (or Cx) | 24 Lines x 80 Cols |
 | vt52b    | `\033L` | nil | nil | nil | DECscope vt52 Bx (with copier) | 24 Lines x 80 Cols |
 | vt55     | `\033E` | nil | nil | nil | DECscope vt55 | 24 Lines x 80 Cols |
+| `*`      | `\033Z` | nil | nil | nil | Any later terminal started in VT52 compat mode | 24 Lines x 80 Cols |
 
 vt50/52 outputs from https://vt100.net/dec/ek-vt5x-op-001.pdf (page 22).
 
