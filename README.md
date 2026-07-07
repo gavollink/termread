@@ -101,13 +101,6 @@ $ echo $TERMID
 \033[65;1;9c
 ```
 
-# Observed Output
-
-Though not complete, I put together a page of how the terminals
-I have tested react to **termread**.
-
-- [Observed Output](Observed_Output.md)
-
 # Why
 
 In these modern times, every text interface to a computer, responds

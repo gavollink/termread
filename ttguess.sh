@@ -265,6 +265,9 @@ _known_terminal()
         xterm420)
             __set_term_info_x "0:256:1:semi" xterm-256color
             ;;
+        xterm5xx)
+            __set_term_info_x "0:256:1:semi" xterm-new
+            ;;
         zutty)
             # Verified on Debian 12 zutty
             # Verified on Ubuntu 22.04 zutty
@@ -844,6 +847,10 @@ __q_getterm ()
                 __debug_p "Contour"
                 _known_terminal "contour"
                 ;;
+            '\033[?65;1;2;6;9;15;16;17;18;21;22;28c')
+                __debug_p "xterm in vt5xx mode"
+                _known_terminal "xterm5xx"
+                ;;
             '\033[?65;'*';22;'*c)
         # \e[?65;*c : VT500 Clone of Some Sort
                 __debug_p "vt500 series or clone with color"
@@ -878,6 +885,7 @@ __q_getterm ()
                 ;;
             '\033[?64;1;2;6;9;15;16;17;18;21;22;28c')
         # \e[?64;1;2;6;9;15;16;17;18;21;22;28c : VT420 mode of xterm
+        # Verifed against xterm 398
                 __debug_p "xterm in vt420 mode"
                 _known_terminal "xterm420"
                 ;;
