@@ -46,12 +46,12 @@ uppercase letters.  Nobody was asking to emulate uppercase only.
 | --------------- |----------|---------------------|-------|
 | VT100 and newer | `\033/Z` | VT52 Emulation Mode | 24 Lines x 80 Cols |
 
-    NOTE: `xterm` in VT52 emulation mode also responds with this
-    same string.  This is correct, to mean "not a real VT52, but a
-    later device in compatability mode".  There are places where this
-    response is claimed as being the actual response for a VT52
-    terminal, which is misleading and is one of the things that led
-    me to read every DEC Video Terminal Manual I could find.
+> **NOTE**: `xterm` in VT52 emulation mode also responds with this
+  same string.  This is correct, to mean "not a real VT52, but a
+  later device in compatability mode".  There are places where this
+  response is claimed as being the actual response for a VT52
+  terminal, which is misleading and is one of the things that led
+  me to read every DEC Video Terminal Manual I could find.
 
 ## VT100 Series: Device Attributes and DECID Responses
 
@@ -76,8 +76,8 @@ uppercase letters.  Nobody was asking to emulate uppercase only.
 Claims to be VT100 compatible while sharing the VT200 and
 later capability list.  (First found in the VT1000/VT1200 Manual).
 
-**NOTE**: the Ps list of a `?61` response does NOT come from the list
-immedately below, but the lists from VT200 and further down.
+> **NOTE**: the Ps list of a `?61` response does NOT come from the list
+  immedately below, but the lists from VT200 and further down.
 
 ## VT100 Options \<Ps>
 
@@ -95,12 +95,12 @@ The \<Ps> is descibed as
 | 11     | VT\|XX-AC                        |
 | 15     | VT\|XX-AC and Graphics Processor |
 
-    > NOTE: A true VT100 with NO OPTIONS would respond
-    with `\033[?1;0c. (`EK-VT100-UG-002`)
+> **NOTE**: A true VT100 with NO OPTIONS would respond
+  with `\033[?1;0c`, (`EK-VT100-UG-002`)
 
-    > NOTE: The LA120, a Teleprinter product from DEC
-    responds to *Device Attributes* with `\033[?2c`.
-    (`EK-LA120-UG-003`)
+> **NOTE**: The LA120, a Teleprinter product from DEC
+  responds to *Device Attributes* with `\033[?2c`.
+  (`EK-LA120-UG-003`)
 
 # VT200 Series: Device Attributes
 
@@ -109,6 +109,9 @@ The \<Ps> is descibed as
 | VT220    | `\033[?62;<Ps>;<...>c` |
 
 ## VT200 Options
+
+> **NOTE**: For a list of all capabilities in one table, see the
+  [Primary Device Attributes Master List](./PrimaryDeviceAttributes_Master.md)
 
 Unlike the VT100 in which all options were represented by a single
 position, the VT200 (and newer) series continue listing numeric
