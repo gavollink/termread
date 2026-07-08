@@ -67,6 +67,18 @@ uppercase letters.  Nobody was asking to emulate uppercase only.
 | VT131    | `\033[?4;<Ps>c` | Block Mode Varient |
 | VT102    | `\033[?6c`      | Minimal Feature Set (cheap version) |
 
+### VT100 Compatible Mode in (much) Later Terminals
+
+```
+\033[?61;<Ps>c
+```
+
+Claims to be VT100 compatible while sharing the VT200 and
+later capability list.  (First found in the VT1000/VT1200 Manual).
+
+**NOTE**: the Ps list of a `?61` response does NOT come from the list
+immedately below, but the lists from VT200 and further down.
+
 ## VT100 Options \<Ps>
 
 The \<Ps> is descibed as
@@ -74,14 +86,14 @@ The \<Ps> is descibed as
 | Number | Option Desciption  |
 |--------| ------------------ |
 | 1      | Standard Terminal Port processor option (STP) |
-| 2      | Advanced Video Option (AVO)    |
-| 3      | STP and AVO                    |
-| 4      | Graphics Processor Option (GO) |
-| 5      | STP and GO                     |
-| 6      | AVO and GO                     |
-| 7      | AVO, STP and GO                |
-| 11     | VT|XX-AC                       |
-| 15     | VT|XX-AC and Graphics Processor |
+| 2      | Advanced Video Option (AVO)      |
+| 3      | STP and AVO                      |
+| 4      | Graphics Processor Option (GO)   |
+| 5      | STP and GO                       |
+| 6      | AVO and GO                       |
+| 7      | AVO, STP and GO                  |
+| 11     | VT\|XX-AC                        |
+| 15     | VT\|XX-AC and Graphics Processor |
 
     > NOTE: A true VT100 with NO OPTIONS would respond
     with `\033[?1;0c. (`EK-VT100-UG-002`)
@@ -281,15 +293,6 @@ Turkish for country specific models of the VT2xx and VT3xx series.
 | 37      | 62 - 63 | Thai                                       |
 | 38      | 62 - 63 | Character Outlining                        |
 
-
-## Non-Official, Software Terminal ID
-
-```
-\033[?61
-```
-
-Does not claim to be any DEC VT, but shares the VT200 and
-later capability list.
 
 ## Non-Official, Software Terminal Capabilities
 
