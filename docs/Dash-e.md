@@ -14,7 +14,7 @@ TeleType machines.
 ## Returns
 
 In modern days, the ENQ character is often ignored by terminals.
-Some terminals send the Primary DA (-t)[./Dash-t.md] response.
+Some terminals send the Primary DA [-t](./Dash-t.md) response.
 
 Simon G Tatham's PuTTY sends 'PuTTY' by default. This can be
 configured to send any string in the settings, under the "Terminal"
@@ -29,4 +29,4 @@ devices that would show "Here is", which would transmit the programmed
 ENQ reply or "WRU" (Who Are You), which would transmit the ENQ character
 to the remote TeleType.
 
-Terminals by DEC also had a programmable response since the VT100.
+Terminals by DEC also had a programmable response since the VT200 series.

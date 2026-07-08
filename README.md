@@ -23,7 +23,7 @@ At least one action must be chosen
 
 | Opt | Desc |
 | --- | --- |
-| [-t](docs/Dash-t.md) | Ask for terminal identity. |
+| [-t](docs/Dash-t.md) `|` `-1` | Ask for terminal identity. |
 | [-2](docs/Dash-2.md) | Ask for terminal version. |
 | [-3](docs/Dash-3.md) | Ask for terminal unique ID. |
 | [-e](docs/Dash-e.md) | Ask for terminal ENQ response. |
