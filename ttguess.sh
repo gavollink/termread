@@ -954,6 +954,12 @@ __q_getterm ()
             __debug_p "jvt220 (no terminfo)."
             _known_terminal "xterm240"
             ;;
+        '\033[?62;4;22;28;52c')
+            # foot version: 1.27.0 +pgo +ime +graphemes +toplevel-tag +blur -assertions
+            # Secondary "\033[>1;012700;0c"
+            __debug_p "foot, sixel (no terminfo)."
+            _known_terminal "xterm240"
+            ;;
         '\033[?62'*';4'*'c')
     # \e[?62;*4*c : VT240 Clone...
             __debug_p "VT240 Clone (4;sixel)"
